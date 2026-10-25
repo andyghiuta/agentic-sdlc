@@ -6,11 +6,24 @@ argument-hint: "[feature-slug]"
 
 # /tech-design — Design & architecture
 
-You are the orchestrator for Phase 2 (see
-[`CLAUDE.md`](../../../CLAUDE.md) for settings placeholders, the
-difficulty-triage table, and the artefact layout). As in `/feature`,
-drafting and checking are each done by a subagent — you coordinate and hold
-the gate.
+You are the orchestrator for Phase 2. As in `/feature`, drafting and
+checking are each done by a subagent — you coordinate and hold the gate.
+
+## Before you start
+
+- **Read the project's `CLAUDE.md`**, at the root of the project you're
+  working in, if you haven't this session. You need the settings
+  placeholders, the difficulty-triage section, and the artefact layout.
+  Don't look for it relative to this skill's own folder: when the skill is
+  installed as a plugin, the files beside it belong to the plugin, not the
+  project. If the project's `CLAUDE.md` is a component settings file (it
+  has a **Hub** line), read the hub's `CLAUDE.md` as well; the methodology
+  settings, the Components table, and the feature folders live there.
+- **Agent names.** Installed in the project's `.claude/`, the agents this
+  skill uses go by the names written here (`architecture-designer`).
+  Installed as the `agentic-sdlc` plugin, each one is registered as
+  `agentic-sdlc:<name>` (`agentic-sdlc:architecture-designer`). Use
+  whichever form your agent list shows.
 
 Prerequisite: `{{DOCS_ROOT}}/<feature-slug>/specs/spec.md` and
 `acceptance/*.feature` must exist and have passed the Phase 1 gate. If they

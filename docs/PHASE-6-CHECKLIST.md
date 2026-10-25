@@ -101,6 +101,13 @@ on the assumption that "the PR merged" means "users have this everywhere."
 - [ ] Produce a concrete output: a PR that edits the harness itself —
       `.claude/skills/*/SKILL.md`, `.claude/agents/*.md`, or `CLAUDE.md`
       (the workspace-level one in `{{HUB_REPO}}`, or a component's own).
+      Where that PR goes depends on how the harness is installed:
+  - **Copied into the project:** the skill and agent edits go in the
+    project's own repo, like any other change.
+  - **Installed as the `agentic-sdlc` plugin:** settings edits still go
+    in the project's `CLAUDE.md`, but skill and agent edits go to the
+    plugin's repo (or your fork of it), and every project picks them up
+    on the next plugin update.
 - [ ] If nothing needs changing, that's a valid outcome too — but say so
       explicitly rather than skipping the retrospective silently.
 

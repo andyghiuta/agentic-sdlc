@@ -77,17 +77,87 @@ the full mechanics.
 
 ## Install
 
-This is a template repo — copy its contents into a target project (or use
-it as the project itself if you're starting fresh).
+Installing has two parts:
+
+1. **The skills and agents**: either copy them into the project or install
+   them as a plugin. See [Choose where the skills live](#choose-where-the-skills-live).
+2. **The project setup**: `CLAUDE.md` with your settings, the Phase 6
+   checklist, and the git hooks. This is needed either way, because the
+   settings belong to each project. See [Single repo](#single-repo),
+   [Monorepo](#monorepo) or [Multi-repo](#multi-repo).
+
+### Choose where the skills live
+
+| | Copy into the project | Install as a plugin |
+|---|---|---|
+| Where they live | The project's `.claude/skills/` and `.claude/agents/` | The `agentic-sdlc` plugin, installed for you or for the project |
+| Commands | `/feature`, `/tech-design`, `/implement` | `/agentic-sdlc:feature`, `/agentic-sdlc:tech-design`, `/agentic-sdlc:implement` |
+| Team gets the same version | Yes, it's in the repo | Yes with project scope, which pins it in `.claude/settings.json` |
+| Phase 6 retro edits to skills | A PR to the project | A PR to the plugin repo (or your fork), which reaches every project |
+| Updates | Copy the new files in by hand | `claude plugin update agentic-sdlc@agentic-sdlc` |
+| Available from any repo | Only where it's copied | Yes with user scope, which helps multi-repo |
+
+Copying is the default: the harness is versioned with the code it governs,
+and retro edits go through the same review as everything else. The plugin
+suits running the methodology across many projects, or across many repos
+of one multi-repo system. Use one or the other in a given project, not
+both, or every command shows up twice.
+
+#### Option A: copy into the project
+
+Copy `.claude/` into the project (step 1 of the setup below).
+
+#### Option B: install as a plugin
+
+This repo is both the plugin and a one-plugin marketplace. Add the
+marketplace once, then install at the scope you want:
+
+```bash
+claude plugin marketplace add andyghiuta/agentic-sdlc
+```
+
+```bash
+claude plugin install agentic-sdlc@agentic-sdlc --scope user
+```
+
+- **`--scope user`**: available in every project on your machine.
+- **`--scope project`**: enabled for everyone in the repo you run it from.
+  It writes to `.claude/settings.json`, which you commit. Each teammate
+  still runs the install command once to download it. To have Claude Code
+  offer the marketplace to them automatically, also commit this:
+
+  ```json
+  {
+    "extraKnownMarketplaces": {
+      "agentic-sdlc": {
+        "source": { "source": "github", "repo": "andyghiuta/agentic-sdlc" }
+      }
+    },
+    "enabledPlugins": {
+      "agentic-sdlc@agentic-sdlc": true
+    }
+  }
+  ```
+
+- Inside a session, `/plugin install agentic-sdlc@agentic-sdlc` does the
+  same and asks for the scope. Run `/reload-plugins` if Claude Code asks
+  you to.
+
+To try a local checkout without installing, start Claude Code with
+`claude --plugin-dir /path/to/agentic-sdlc`.
+
+With the plugin, skip copying `.claude/` in the setup steps below. Copy
+`CLAUDE.md`, the checklist and the templates from this repo as described.
 
 ### Single repo
 
-1. Copy the Claude Code harness into your project:
+1. Copy the project files in:
 
    ```bash
-   cp -r .claude /path/to/your-project/
-   cp CLAUDE.md /path/to/your-project/   # or merge into an existing CLAUDE.md
-   cp -r docs/PHASE-6-CHECKLIST.md /path/to/your-project/docs/
+   cp -r .claude /path/to/your-project/   # Option A only; skip with the plugin
+   cp CLAUDE.md /path/to/your-project/    # or merge into an existing CLAUDE.md
+   mkdir -p /path/to/your-project/docs
+   cp docs/PHASE-6-CHECKLIST.md /path/to/your-project/docs/
    ```
 
 2. Fill in the **Value** column of the settings table in your project's
@@ -106,7 +176,8 @@ it as the project itself if you're starting fresh).
 
 Same as above, but:
 
-- Copy `.claude/` and `CLAUDE.md` to the monorepo **root**.
+- Copy `CLAUDE.md` (and `.claude/`, for Option A) to the monorepo
+  **root**.
 - In the root `CLAUDE.md`, set `{{REPO_MODE}}` to `monorepo` and fill in
   the **Components** table, one row per package/app, with `location`
   relative to the repo root.
@@ -125,7 +196,8 @@ Same as above, but:
   `{{WORKSPACE_ROOT}}` (e.g. `~/dev/acme/service-api`,
   `~/dev/acme/admin-web`, `~/dev/acme/mobile-android`, ...).
 - Pick one repo as `{{HUB_REPO}}` (any component, or a dedicated
-  coordination repo) and copy `.claude/` and `CLAUDE.md` there. Set
+  coordination repo) and copy `CLAUDE.md` there (plus `.claude/`, for
+  Option A). Set
   `{{REPO_MODE}}` to `multi-repo`, and fill in `{{WORKSPACE_ROOT}}`,
   `{{HUB_REPO}}`, and the Components table (each row's `location` relative
   to `{{WORKSPACE_ROOT}}`). If the hub is also a component, its own
@@ -238,6 +310,9 @@ deliberately; no skill or agent in this repo ever uses it.
                    #   picks up where progress.md left off, per component.
 ```
 
+With the plugin, the same commands are `/agentic-sdlc:feature`,
+`/agentic-sdlc:tech-design` and `/agentic-sdlc:implement`.
+
 `/implement` only runs when you type it. Claude won't start it on its own,
 because it writes code and makes commits. `/feature` and `/tech-design`
 can also be picked up from a plain request like "let's spec out bulk
@@ -249,11 +324,22 @@ decide rollout order across components, merge, deploy/release each one
 outcome in production, and run a retrospective that edits the harness
 itself — so the next feature starts ahead of this one.
 
+## Releasing the plugin
+
+`.claude-plugin/plugin.json` sets `version`, and plugin installs stay on
+that version until it changes. When a change to the skills or agents
+should reach plugin users, bump `version` in the same commit, then check
+the manifests with `claude plugin validate .`. The project-copy install
+isn't affected by this; those projects take changes by copying files in.
+
 ## Repo layout
 
 ```
 CLAUDE.md                          # settings, repo mode, Components table, roles,
                                     #   artefact layout, cross-component rules, loop caps
+.claude-plugin/
+  plugin.json                      # plugin manifest; points at .claude/skills and .claude/agents
+  marketplace.json                 # one-plugin marketplace, so the repo installs directly
 .claude/
   skills/
     feature/SKILL.md               # /feature

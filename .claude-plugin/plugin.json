@@ -1,0 +1,26 @@
+{
+  "name": "agentic-sdlc",
+  "version": "0.1.0",
+  "description": "Six-phase agentic SDLC: /feature, /tech-design and /implement skills with 11 subagents. Agents do the volume work; a named human signs off every gate. Works in a single repo, a monorepo, or across many repos.",
+  "author": {
+    "name": "Andy Ghiuta"
+  },
+  "homepage": "https://github.com/andyghiuta/agentic-sdlc",
+  "repository": "https://github.com/andyghiuta/agentic-sdlc",
+  "license": "MIT",
+  "keywords": ["sdlc", "tdd", "workflow", "code-review", "planning", "monorepo", "microservices"],
+  "skills": ["./.claude/skills/"],
+  "agents": [
+    "./.claude/agents/architecture-designer.md",
+    "./.claude/agents/architecture-reviewer.md",
+    "./.claude/agents/contract-reviewer.md",
+    "./.claude/agents/design-validator.md",
+    "./.claude/agents/external-review-handler.md",
+    "./.claude/agents/feature-reviewer.md",
+    "./.claude/agents/implementation-planner.md",
+    "./.claude/agents/requirements-interviewer.md",
+    "./.claude/agents/spec-validator.md",
+    "./.claude/agents/task-implementer.md",
+    "./.claude/agents/task-reviewer.md"
+  ]
+}

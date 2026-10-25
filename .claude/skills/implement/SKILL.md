@@ -15,9 +15,22 @@ component repo that task belongs to. Your job is to sequence subagents,
 resolve which repo/package each task runs against, enforce the gates and
 loop caps, maintain `progress.md`, and talk to the human.
 
-Read [`CLAUDE.md`](../../../CLAUDE.md) first if you haven't this session —
-you need the settings placeholders, `{{REPO_MODE}}`, the Components table
-(if present), the layering rule, and the loop-cap table below.
+## Before you start
+
+- **Read the project's `CLAUDE.md`**, at the root of the project you're
+  working in, if you haven't this session. You need the settings
+  placeholders, `{{REPO_MODE}}`, the Components table (if present), the
+  layering rule, and the loop-cap table. Don't look for it relative to
+  this skill's own folder: when the skill is installed as a plugin, the
+  files beside it belong to the plugin, not the project. If the project's
+  `CLAUDE.md` is a component settings file (it has a **Hub** line), read
+  the hub's `CLAUDE.md` as well; the methodology settings, the Components
+  table, and the feature folders live there.
+- **Agent names.** Installed in the project's `.claude/`, the agents this
+  skill uses go by the names written here (`task-implementer`). Installed
+  as the `agentic-sdlc` plugin, each one is registered as
+  `agentic-sdlc:<name>` (`agentic-sdlc:task-implementer`). Use whichever
+  form your agent list shows.
 
 Prerequisite: Phase 2 must be complete and gated (`design/system-design.md`
 exists and was approved). If it isn't, tell the user to run `/tech-design`
@@ -244,7 +257,7 @@ shared feature folder in `{{HUB_REPO}}` so a reviewer in any one repo can
 see the full cross-repo picture. Do **not** merge any of them — merging is
 Phase 6, manual, human-only, and backstopped by each component's branch-
 protection hook. Point the user at
-[`docs/PHASE-6-CHECKLIST.md`](../../../docs/PHASE-6-CHECKLIST.md) for what
+the project's `docs/PHASE-6-CHECKLIST.md` (copied in at setup) for what
 comes next, including the staggered-rollout notes for components with
 slower release cadences (mobile app store review, browser-extension store
 review).

@@ -6,16 +6,28 @@ argument-hint: "[feature-slug] [request]"
 
 # /feature — Discover
 
-You are the orchestrator for Phase 1 of the agentic SDLC (see
-[`CLAUDE.md`](../../../CLAUDE.md) for settings placeholders, roles, and the
-artefact layout this skill writes into). Your job in this skill is
-coordination, not drafting: the interview, validation, and test-writing
-below are each done by a subagent so the work stays checked rather than
-self-reported.
+You are the orchestrator for Phase 1 of the agentic SDLC. Your job in this
+skill is coordination, not drafting: the interview, validation, and
+test-writing below are each done by a subagent so the work stays checked
+rather than self-reported.
 
-Read `CLAUDE.md` first if you haven't this session — you need
-`{{DOCS_ROOT}}`, `{{REPO_MODE}}`, the Components table (if present), and the
-loop-cap table before starting.
+## Before you start
+
+- **Read the project's `CLAUDE.md`**, at the root of the project you're
+  working in, if you haven't this session. You need `{{DOCS_ROOT}}`,
+  `{{REPO_MODE}}`, the Components table (if present), and the loop-cap
+  table. Don't look for it relative to this skill's own folder: when the
+  skill is installed as a plugin, the files beside it belong to the
+  plugin, not the project. If the project's `CLAUDE.md` is a component
+  settings file (it has a **Hub** line), read the hub's `CLAUDE.md` as
+  well; the methodology settings, the Components table, and the feature
+  folders live there. If you can't find the settings at all, stop and ask
+  the user to set the project up first (see the agentic-sdlc README).
+- **Agent names.** Installed in the project's `.claude/`, the agents this
+  skill uses go by the names written here (`requirements-interviewer`).
+  Installed as the `agentic-sdlc` plugin, each one is registered as
+  `agentic-sdlc:<name>` (`agentic-sdlc:requirements-interviewer`). Use
+  whichever form your agent list shows.
 
 ## 0. Set up the feature folder
 

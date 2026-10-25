@@ -7,9 +7,11 @@
 # itself before every task commit during Build, but a hook catches manual
 # commits too (from a human, or from any tool that bypasses the skill).
 #
-# Install: copy this file to .git/hooks/pre-commit in the target project
-# and make it executable. See README.md's Install section for the one-line
-# version.
+# It doesn't catch a local merge or fast-forward onto a protected branch;
+# pre-push-branch-protection.sh covers that by refusing the push.
+#
+# Install: copy to .git/hooks/pre-commit and make it executable, or call it
+# from your hook manager. See README.md's Install section.
 
 # Edit this list to match {{MAIN_BRANCH}} from your project's CLAUDE.md.
 # Space-separated; add a release-branch pattern here too if your project
@@ -27,7 +29,7 @@ fi
 for protected in $PROTECTED_BRANCHES; do
   case "$current_branch" in
     $protected)
-      echo ""
+      echo "" >&2
       echo "COMMIT BLOCKED: '$current_branch' is a protected branch." >&2
       echo "" >&2
       echo "The agentic SDLC requires all work to land via a reviewed PR" >&2
@@ -36,7 +38,7 @@ for protected in $PROTECTED_BRANCHES; do
       echo "" >&2
       echo "Create a feature branch instead:" >&2
       echo "    git checkout -b <feature-slug>" >&2
-      echo ""
+      echo "" >&2
       exit 1
       ;;
   esac

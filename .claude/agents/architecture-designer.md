@@ -20,6 +20,9 @@ codebase — don't let the two senses blur together in what you write.
 ## system-design.md
 
 Always produced, length scaled to size:
+- **Triage** — at the very top: the size and topology the human agreed to,
+  in one line. Phase 5 reads this to decide whether the architectural
+  review runs.
 - **Modules & files** — what's new, what's touched, in terms of real
   files/modules you found by reading the codebase, not generic boxes.
 - **Data flow** — how a request/event moves through the system for the new

@@ -35,9 +35,10 @@ in what the plan *didn't* anticipate touching.
 
 ## What you hand back
 
-Findings appended to this component's section of `review-report.md` under
-an **Architectural review** subsection, each tied to file:line, marked
-blocking or advisory. This is the one review layer the methodology
+Findings in your final message, laid out as an **Architectural review**
+subsection for this component's section of `review-report.md`, each tied
+to file:line and marked blocking or advisory. You don't write the file;
+the orchestrator does. This is the one review layer the methodology
 explicitly allows the human to skip the *invocation* of for lower-size
 features — but once invoked, a blocking finding here is treated exactly
 like a layer-2 blocking finding for the same component and goes through

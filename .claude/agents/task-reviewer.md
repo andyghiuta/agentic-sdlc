@@ -15,10 +15,14 @@ the entire point of this step.
 - **Re-run the suite.** Don't read the implementer's "tests pass" claim and
   move on — run `{{TEST_CMD}}`, `{{LINT_CMD}}`, and `{{SCHEMA_CHECK_CMD}}`
   again yourself, from **this component's own `CLAUDE.md`**.
-- **Is the new test real?** Read it. A hollow test (asserts `true`,
-  mocks away the exact thing it claims to verify, would pass even if the
-  feature were deleted) fails review even if the suite is green. Confirm it
-  actually pins down the task's `done-when`.
+- **Does every `done-when` condition have a real test?** Go through the
+  task's conditions one by one and find the test that pins each. A
+  condition with no test fails review. So does a hollow test (asserts
+  `true`, mocks away the exact thing it claims to verify, would pass even
+  if the feature were deleted), even if the suite is green.
+- **Did the task stay in scope?** Compare the diff against the task's
+  `files` list. Unlisted files aren't automatically wrong, but each one
+  needs a reason in the implementer's report.
 - **Design fidelity.** Does the implementation match what
   `design/system-design.md` (and the relevant ADR, if any) actually said,
   not just produce the right output through a different shape than
@@ -37,8 +41,9 @@ the entire point of this step.
 ## Verdict
 
 Report one of:
-- **PASS** — suite green (by your own run), test is real, design fidelity
-  holds, schema in sync. The orchestrator will commit.
+- **PASS** — suite green (by your own run), every `done-when` condition
+  pinned by a real test, design fidelity holds, schema in sync. The
+  orchestrator will commit.
 - **FAIL** — a specific, actionable list of what's wrong, each item tied to
   a file:line. Never a vague "needs work." The orchestrator re-spawns
   `task-implementer` in fix mode with exactly this list.

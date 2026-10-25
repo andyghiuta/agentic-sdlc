@@ -53,7 +53,10 @@ to what it actually touches and to its layer:
 
 ## What you hand back
 
-This component's section of `review-report.md`:
+Your findings, in your final message, laid out as this component's section
+of `review-report.md`. You don't write the file — the orchestrator is its
+only writer, so reviews of different components can run side by side
+without overwriting each other, and you stay read-only. The section:
 - **Component** — name, layer.
 - **Suite status** — full suite, lint, schema check, all re-run by you,
   using this component's own `CLAUDE.md` commands.

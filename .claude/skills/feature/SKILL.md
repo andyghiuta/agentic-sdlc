@@ -1,6 +1,7 @@
 ---
 name: feature
 description: Phase 1 (Discover) of the agentic SDLC — interviews a new feature into existence, validates the resulting spec against the real codebase (across every component it touches, in monorepo/multi-repo), and writes Gherkin acceptance tests. Use when the user wants to start a new feature, invokes /feature, or hands you a messy, informal feature request that needs turning into a proper spec before any design or code happens.
+argument-hint: "[feature-slug] [request]"
 ---
 
 # /feature — Discover
@@ -48,17 +49,28 @@ against a component you can't actually read.
 
 ## 1. Interview
 
-Dispatch the `requirements-interviewer` subagent with the user's raw
-request, the feature folder path, and — for monorepo/multi-repo — the list
-of touched components and their locations from step 0.5. It will scan each
-touched component's codebase itself and run the depth-first interview
-directly with the user (relay its questions and the user's answers
-faithfully — don't paraphrase away detail). It writes incrementally to
-`specs/spec.md` so the interview can be interrupted and resumed, and (for
-monorepo/multi-repo) includes a **Components touched** section listing each
-component, its layer, and why the feature needs it.
+A subagent can't stop and wait for the user, so the interview runs in
+rounds, with you as the go-between:
 
-When the interviewer reports the draft spec complete, move on.
+1. Dispatch `requirements-interviewer` with the user's raw request, the
+   feature folder path, and — for monorepo/multi-repo — the list of
+   touched components and their locations from step 0.5. It scans each
+   touched component's codebase, then ends its turn with either a
+   **QUESTION** or **DONE**.
+2. On **QUESTION**, put it to the user word for word — don't paraphrase
+   away detail. When it offers a few clear options, a multiple-choice
+   prompt is fine; otherwise ask in plain text.
+3. Continue the same interviewer with the user's answer, verbatim (send it
+   to the running agent if your tools allow that; otherwise dispatch a
+   fresh one with the folder path, which works because it keeps
+   everything on disk). Repeat from step 2.
+4. On **DONE**, move on.
+
+Each round, the interviewer writes `specs/interview-log.md` (every
+question and answer, verbatim) and updates `specs/spec.md`, so the
+interview can stop at any point and resume later. For monorepo/multi-repo
+the spec includes a **Components touched** section listing each
+component, its layer, and why the feature needs it.
 
 ## 2. Validate
 
@@ -70,7 +82,9 @@ code, not whichever repo happens to be open.
 
 - **Zero discrepancies** → go to step 3.
 - **Discrepancies found** → send them back to `requirements-interviewer`
-  (fix mode: here's what's wrong, correct the spec) and re-validate. This is
+  (fix mode: here's what's wrong, correct the spec). If it comes back with
+  a QUESTION because a correction changes something the user said, relay
+  it as in step 1. Then re-validate. This is
   round 1 of the **validate-and-fix loop, capped at 3 rounds** (see
   `CLAUDE.md`).
 - **Cap hit (3 rounds, still discrepancies)** → **hard stop.** Do not
@@ -80,8 +94,8 @@ code, not whichever repo happens to be open.
 
 ## 3. Write acceptance tests
 
-Once validation is clean, dispatch `requirements-interviewer` again (or
-handle directly if trivial) to write Gherkin scenarios: one `.feature` file
+Once validation is clean, dispatch `requirements-interviewer` in acceptance
+mode to write Gherkin scenarios: one `.feature` file
 per area of the spec, under `acceptance/`, in plain business language. Every
 scenario must trace to a specific section of `specs/spec.md` — if a
 scenario doesn't map cleanly to something the spec says, that's a sign the

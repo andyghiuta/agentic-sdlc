@@ -1,6 +1,7 @@
 ---
 name: tech-design
 description: Phase 2 (Design & architecture) of the agentic SDLC — triages how hard a validated feature actually is (size, and in monorepo/multi-repo, how many components it crosses), drafts a system design — plus cross-component contracts where relevant — scaled to that triage, and validates it all against the real codebase(s) before the Senior Dev gate. Use when the user invokes /tech-design, or wants to move a feature that already has a /feature spec into technical design.
+argument-hint: "[feature-slug]"
 ---
 
 # /tech-design — Design & architecture
@@ -22,10 +23,15 @@ section, for monorepo/multi-repo) and scan the relevant codebase(s)
 yourself for scope signals: how many files/modules are touched, whether the
 data model changes, whether a new external dependency is needed. Classify
 the change on **two axes** per `CLAUDE.md`'s difficulty-triage section, and
-**announce both reads out loud** along with the artefacts they earn, before
-proceeding. Give the user a clear chance to override either — a one-line
-"I'd call this moderate, cross-component, because X" is enough; don't block
-waiting for a response if they don't object.
+**announce both reads out loud** along with the artefacts they earn — for
+example, "I'd call this moderate and cross-component because X, which
+earns a full system design, contracts for the two API boundaries, and no
+ADRs unless a real trade-off turns up." Then **stop and wait** for the user
+to confirm or override. Drafting the design is the expensive step, and
+redoing it because the triage was wrong costs far more than one short
+question. Record the agreed triage at the top of `system-design.md` so
+later phases (and Phase 5's decision about the architectural review) can
+read it.
 
 - **Size** — trivial / moderate / major.
 - **Topology** — single-component or cross-component (always

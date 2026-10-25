@@ -90,20 +90,14 @@ it as the project itself if you're starting fresh).
    cp -r docs/PHASE-6-CHECKLIST.md /path/to/your-project/docs/
    ```
 
-2. Fill in the settings table in your project's `CLAUDE.md` — replace
-   every `{{PLACEHOLDER}}` with your project's real test command, lint
-   command, issue tracker, deploy command, etc. Leave `{{REPO_MODE}}` as
-   `single-repo` (or just leave that section out).
+2. Fill in the **Value** column of the settings table in your project's
+   `CLAUDE.md`: your real test command, lint command, issue tracker,
+   deploy command, and so on. Leave the placeholder names in the left
+   column alone; skills look values up by those names. Leave
+   `{{REPO_MODE}}` as `single-repo`.
 
-3. Install the branch-protection hook:
-
-   ```bash
-   cp hooks/pre-commit-branch-protection.sh /path/to/your-project/.git/hooks/pre-commit
-   chmod +x /path/to/your-project/.git/hooks/pre-commit
-   ```
-
-   Edit the `PROTECTED_BRANCHES` line in the installed hook if your
-   `{{MAIN_BRANCH}}` isn't `main` or `master`.
+3. Install the branch-protection hooks (see
+   [Branch-protection hooks](#branch-protection-hooks) below).
 
 4. In Claude Code, from your project root, run `/feature` to start your
    first feature.
@@ -113,16 +107,17 @@ it as the project itself if you're starting fresh).
 Same as above, but:
 
 - Copy `.claude/` and `CLAUDE.md` to the monorepo **root**.
-- Fill in `{{REPO_MODE}} = monorepo` and the **Components** table in the
-  root `CLAUDE.md`, one row per package/app, with `location` relative to
-  the repo root.
-- Each component package can either point its `settings` column at its own
-  local `CLAUDE.md` (for a package with real stack differences — e.g. a
-  Kotlin Android module in an otherwise TypeScript monorepo) or, for
-  packages that genuinely share the same stack/tooling, inline its
-  settings directly in the root `CLAUDE.md`'s Settings table.
-- Install the branch-protection hook once, at the monorepo root — it
-  covers every package, since there's one `.git`.
+- In the root `CLAUDE.md`, set `{{REPO_MODE}}` to `monorepo` and fill in
+  the **Components** table, one row per package/app, with `location`
+  relative to the repo root.
+- For a package whose stack differs from the root's (say, a Kotlin Android
+  module in an otherwise TypeScript monorepo), copy
+  [templates/component-CLAUDE.md](templates/component-CLAUDE.md) into the
+  package directory, fill it in, and point that row's `settings` column at
+  it. Packages that share the root's tooling can point `settings` at the
+  root `CLAUDE.md` instead.
+- Install the hooks once, at the monorepo root; there's one `.git`, so
+  they cover every package.
 
 ### Multi-repo
 
@@ -130,25 +125,94 @@ Same as above, but:
   `{{WORKSPACE_ROOT}}` (e.g. `~/dev/acme/service-api`,
   `~/dev/acme/admin-web`, `~/dev/acme/mobile-android`, ...).
 - Pick one repo as `{{HUB_REPO}}` (any component, or a dedicated
-  coordination repo) and copy `.claude/` and `CLAUDE.md` there. Fill in
-  `{{REPO_MODE}} = multi-repo`, `{{WORKSPACE_ROOT}}`, `{{HUB_REPO}}`, and
-  the Components table (each row's `location` relative to
-  `{{WORKSPACE_ROOT}}`).
-- Copy a plain single-repo `CLAUDE.md` into **every** component repo
-  (including the hub, if it's also a component and not a dedicated docs
-  repo) and fill in that component's own settings table. This is the file
-  each row's `settings` column points at.
-- Install the branch-protection hook **separately in every component
-  repo** — there's no shared `.git` to hook once:
+  coordination repo) and copy `.claude/` and `CLAUDE.md` there. Set
+  `{{REPO_MODE}}` to `multi-repo`, and fill in `{{WORKSPACE_ROOT}}`,
+  `{{HUB_REPO}}`, and the Components table (each row's `location` relative
+  to `{{WORKSPACE_ROOT}}`). If the hub is also a component, its own
+  settings go in that same file's Settings table.
+- In **every other** component repo, copy
+  [templates/component-CLAUDE.md](templates/component-CLAUDE.md) to the
+  repo root as `CLAUDE.md` and fill it in. This is the file each row's
+  `settings` column points at. It's deliberately small: just that
+  component's settings and an optional layer-order override, with the
+  methodology itself staying in the hub.
+- Give Claude Code access to the sibling repos. It only works inside the
+  directory it was started in, so without this, reading or editing another
+  component prompts for permission or is refused. In the hub's
+  `.claude/settings.json`, list every other component's location:
 
-  ```bash
-  for repo in service-api admin-web enduser-web mobile-android mobile-ios browser-ext; do
-    cp hooks/pre-commit-branch-protection.sh "$WORKSPACE_ROOT/$repo/.git/hooks/pre-commit"
-    chmod +x "$WORKSPACE_ROOT/$repo/.git/hooks/pre-commit"
-  done
+  ```json
+  {
+    "permissions": {
+      "additionalDirectories": [
+        "../db-schema",
+        "../admin-web",
+        "../enduser-web",
+        "../mobile-android",
+        "../mobile-ios",
+        "../browser-ext"
+      ]
+    }
+  }
   ```
 
+  For a one-off session, `claude --add-dir ../admin-web` does the same.
+- Install the hooks **separately in every component repo**; there's no
+  shared `.git` to hook once.
 - Run `/feature` from `{{HUB_REPO}}`.
+
+### Branch-protection hooks
+
+Two hooks guard the protected branch: `pre-commit` refuses commits made on
+it, and `pre-push` refuses pushes to it (which catches a local merge onto
+`main` followed by a push). Install both in every repo that holds a
+component: once for single-repo and monorepo, once per repo for
+multi-repo.
+
+First check whether the repo already uses a hook manager (husky,
+lefthook, pre-commit, ...):
+
+```bash
+git -C /path/to/repo config core.hooksPath
+```
+
+If that prints nothing, no manager has redirected git's hooks, so copy the
+scripts into `.git/hooks`:
+
+```bash
+REPO=/path/to/repo
+cp hooks/pre-commit-branch-protection.sh "$REPO/.git/hooks/pre-commit"
+cp hooks/pre-push-branch-protection.sh "$REPO/.git/hooks/pre-push"
+chmod +x "$REPO/.git/hooks/pre-commit" "$REPO/.git/hooks/pre-push"
+```
+
+Check first that `.git/hooks/pre-commit` and `.git/hooks/pre-push` don't
+already exist, since `cp` overwrites them. If either does, call the script
+from inside the existing hook instead.
+
+If `core.hooksPath` prints a path, a hook manager is in charge and
+`.git/hooks` is ignored. Copy the two scripts somewhere in the repo and
+call them from the manager's `pre-commit` and `pre-push` hooks. The
+pre-push script reads the list of refs being pushed from standard input,
+so make sure the manager passes that through.
+
+For multi-repo, once you've run those checks for every component and
+found no hook manager and no existing hooks, loop over the components
+(adjust the list to yours):
+
+```bash
+for repo in db-schema service-api admin-web enduser-web mobile-android mobile-ios browser-ext; do
+  cp hooks/pre-commit-branch-protection.sh "$WORKSPACE_ROOT/$repo/.git/hooks/pre-commit"
+  cp hooks/pre-push-branch-protection.sh "$WORKSPACE_ROOT/$repo/.git/hooks/pre-push"
+  chmod +x "$WORKSPACE_ROOT/$repo/.git/hooks/pre-commit" "$WORKSPACE_ROOT/$repo/.git/hooks/pre-push"
+done
+```
+
+Both scripts protect `main` and `master` by default. If your
+`{{MAIN_BRANCH}}` is something else, edit the `PROTECTED_BRANCHES` line in
+each; keep the two lists the same. `git commit --no-verify` and
+`git push --no-verify` skip the hooks. That's there for humans who need it
+deliberately; no skill or agent in this repo ever uses it.
 
 ## Usage
 
@@ -174,6 +238,11 @@ Same as above, but:
                    #   picks up where progress.md left off, per component.
 ```
 
+`/implement` only runs when you type it. Claude won't start it on its own,
+because it writes code and makes commits. `/feature` and `/tech-design`
+can also be picked up from a plain request like "let's spec out bulk
+export".
+
 Then work through [Phase 6's checklist](docs/PHASE-6-CHECKLIST.md) by hand:
 decide rollout order across components, merge, deploy/release each one
 (accounting for app-store/extension-store review lead time), validate the
@@ -192,8 +261,10 @@ CLAUDE.md                          # settings, repo mode, Components table, role
     implement/SKILL.md             # /implement
   agents/                          # 11 subagents backing the three skills
 hooks/
-  pre-commit-branch-protection.sh  # blocks direct commits to a protected branch
-                                    #   (install once per component repo)
+  pre-commit-branch-protection.sh  # blocks commits made on a protected branch
+  pre-push-branch-protection.sh    # blocks pushes to a protected branch
+templates/
+  component-CLAUDE.md              # per-component settings for monorepo/multi-repo
 docs/
   PHASE-6-CHECKLIST.md             # manual Ship & Learn checklist
   <feature-slug>/                  # created per feature as you run the skills,

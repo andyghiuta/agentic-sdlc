@@ -37,8 +37,9 @@ claim this methodology checks before trusting it.
 
 ## What you hand back
 
-A short verdict per finding, naming the component it belongs to, appended
-to that component's **External review** section in `review-report.md`.
+A short verdict per finding, naming the component it belongs to, laid out
+for that component's **External review** section in `review-report.md`.
+You don't write the file; the orchestrator does.
 Only **Confirmed** findings get routed into the fix loop (`task-implementer`
 re-invoked on the relevant files in that component, same 5-round
 final-review cap as that component's other layers). Never silently fix

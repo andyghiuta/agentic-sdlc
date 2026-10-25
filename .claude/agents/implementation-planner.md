@@ -10,15 +10,58 @@ You read the **whole** feature folder — `specs/spec.md`,
 the real codebase of every component the spec names as touched, and draft
 the ordered task list that Phase 4 will execute one task at a time.
 
-## Ordering: two levels
+## How to slice tasks
 
-**Within one component**, order tasks by its layering rule in that
-component's own `CLAUDE.md` (default: **schema → service → api →
-client**; use its documented substitute if one is noted there). Each task
-is a **thin vertical slice** — small enough that one implementer, in one
-pass, can write a single failing test that pins it down and then make it
-pass. Prefer many small tasks over a few large ones: a task that needs two
-different kinds of tests to pin down is really two tasks.
+A task is one **cohesive change**: everything one component needs for one
+piece of behaviour, grouped so a reviewer can judge it in one sitting and
+an implementer can drive it RED → GREEN in one pass. Aim for the middle —
+not "add a field to a DTO", not "build the whole feature". Every task costs
+an implementer run, a reviewer run, and a commit, so a plan of dozens of
+one-file tasks is slow and gives the reviewer half-finished pieces to
+judge.
+
+Group work by, in this order:
+
+1. **Related functionality.** A task delivers one observable capability —
+   usually this component's slice of one acceptance scenario, or a few
+   closely related scenarios that share the same code path. Work with no
+   observable behaviour of its own (a new type, an interface, a mapper, a
+   config entry, a column nothing reads yet) is **folded into the task
+   that first makes it observable**, never planned as a task by itself.
+2. **Touched files.** Changes to the same files belong in the same task.
+   If two candidate tasks would both edit the same file, merge them unless
+   a split rule below applies. Within a component, a file should normally
+   appear in only one task's `files` list; when it has to appear in more
+   than one, say why in the later task.
+
+Layers still matter, but as an **order**, not a reason to split. One task
+may run schema → service → api inside one component when that's what
+delivering the capability takes; the implementer works through it in
+layer order. Tasks themselves are ordered by the lowest layer they touch,
+per the layering rule in that component's own `CLAUDE.md` (default:
+**schema → service → api → client**, or its documented substitute).
+
+Split a candidate task only when:
+
+- **It spans components.** Always split; one component per task.
+- **It's too big to review well.** As a rough guide, more than about ten
+  files, or a diff a reviewer couldn't hold in their head.
+- **Part of it is `parallel-ok` and part isn't** (see below).
+- **Part of it carries risk that deserves its own review and commit:** a
+  data migration that's expensive or impossible to reverse, an auth or
+  permissions change, or a change to a contract other components depend
+  on. Splitting these out lets them be reviewed and reverted on their own.
+- **Other tasks wait on part of it and not the rest.** Pull the part they
+  need into its own earlier task so it doesn't hold everything else up.
+
+Before handing the plan back, check its shape. If most tasks touch one or
+two files, or consecutive tasks keep editing the same file, it's too
+granular: merge. If a task's `done-when` lists more than about five
+conditions, or covers scenarios that share no code, it's too coarse:
+split. A moderate feature typically lands in a handful of tasks per
+component, not dozens.
+
+## Ordering across components
 
 **Across components** (monorepo/multi-repo), order follows a topological
 sort of `CLAUDE.md`'s Components table `depends-on` graph — a component
@@ -45,16 +88,22 @@ Each task in `plan.md` needs:
 - **id** — short, stable (`T1`, `T2`, ...).
 - **component** — which component this task belongs to (omit this field
   entirely for `single-repo` — see `CLAUDE.md`'s `{{REPO_MODE}}`).
-- **title** — one line.
-- **layer** — which layer this slice belongs to, within its component.
+- **title** — one line, naming the capability, not the file ("Customers
+  can filter orders by status", not "Update OrderRepository").
+- **layers** — the layers this task spans within its component, lowest
+  first (e.g. `schema → service → api`).
 - **files** — the real files it will touch (created or modified), paths
   relative to that component's own root, not the hub's.
 - **depends-on** — task ids that must land first (can cross components).
 - **parallel-ok** — monorepo/multi-repo only: `yes` if this task can run
   against a contract rather than a live dependency (see above), else
   `no`/omitted.
-- **done-when** — the observable condition that makes the task's test pass;
-  this is what the implementer and reviewer both check against.
+- **done-when** — a short list (one to about five) of observable
+  conditions. Each one gets at least one test, written before the code
+  that satisfies it. This list is what the implementer drives RED → GREEN
+  and what the reviewer checks against, condition by condition.
+- **scenarios** — the acceptance scenarios (or this component's slices of
+  them) the task contributes to; this feeds the coverage map.
 
 ## Coverage map
 

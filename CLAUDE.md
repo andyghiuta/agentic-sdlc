@@ -3,15 +3,24 @@
 This file is the single place a team fills in to point the methodology at
 their actual stack and topology. Every skill and subagent in `.claude/`
 reads these placeholders instead of hard-coding a language, database, issue
-tracker, deploy tool, or repo layout. Fill in the right-hand column once per
-project (and once per component, where noted); everything else in this repo
-is written against the left-hand placeholder names.
+tracker, deploy tool, or repo layout. Fill in the **Value** column (the
+right-hand one) once per project, and once per component where noted;
+everything else in this repo is written against the left-hand placeholder
+names.
+
+**How a placeholder resolves.** When a skill or agent says `{{TEST_CMD}}`,
+it means the Value in the `{{TEST_CMD}}` row of the relevant settings table
+— this file for a `single-repo` project, or the component's own
+`CLAUDE.md` for monorepo/multi-repo. Keep the placeholder names in the
+left column exactly as they are; they're what gets looked up. An empty
+Value means "not configured": stop and ask the human for it rather than
+guessing from the Example column.
 
 ## Repo mode
 
-| Placeholder | What it is | Values |
-|---|---|---|
-| `{{REPO_MODE}}` | How this codebase is laid out | `single-repo` (default — one repo, one codebase: the plain v1 methodology, nothing below the next heading applies), `monorepo` (one repo, multiple packages/apps), `multi-repo` (one repo per component, checked out as siblings on disk) |
+| Placeholder | What it is | Allowed values | Value |
+|---|---|---|---|
+| `{{REPO_MODE}}` | How this codebase is laid out | `single-repo` (one repo, one codebase: the plain v1 methodology, nothing under "Components" applies), `monorepo` (one repo, multiple packages/apps), `multi-repo` (one repo per component, checked out as siblings on disk) | `single-repo` |
 
 If `{{REPO_MODE}} = single-repo`, skip straight to "Settings table" below —
 everything in "Components" doesn't apply and every placeholder elsewhere in
@@ -27,10 +36,10 @@ is a package or app directory; in multi-repo it's a whole repo.
 
 ### Workspace-level settings
 
-| Placeholder | What it is | Example |
-|---|---|---|
-| `{{WORKSPACE_ROOT}}` | Common parent directory every component repo is checked out under (**multi-repo only** — the convention this methodology assumes is sibling checkouts: `{{WORKSPACE_ROOT}}/service-api`, `{{WORKSPACE_ROOT}}/admin-web`, etc. For monorepo this is just the repo root) | `~/dev/acme/` |
-| `{{HUB_REPO}}` | The one component that holds the feature folder (`{{DOCS_ROOT}}/<feature-slug>/`) for a cross-component feature — usually the component you run `/feature` from, or a dedicated coordination repo | `service-api`, `platform-docs` |
+| Placeholder | What it is | Example | Value |
+|---|---|---|---|
+| `{{WORKSPACE_ROOT}}` | Common parent directory every component repo is checked out under (**multi-repo only** — the convention this methodology assumes is sibling checkouts: `{{WORKSPACE_ROOT}}/service-api`, `{{WORKSPACE_ROOT}}/admin-web`, etc. For monorepo this is just the repo root) | `~/dev/acme/` | |
+| `{{HUB_REPO}}` | The one component that holds the feature folder (`{{DOCS_ROOT}}/<feature-slug>/`) for a cross-component feature — usually the component you run `/feature` from, or a dedicated coordination repo | `service-api`, `platform-docs` | |
 
 A feature's artefacts live in exactly one place — `{{HUB_REPO}}` — even
 when the work spans five repos. This is what lets a plan, a progress file,
@@ -76,33 +85,44 @@ If `depends-on` describes a cycle (A depends on B depends on A), that's a
 design smell this methodology refuses to route around automatically — flag
 it to the human during `/tech-design` rather than guessing an order.
 
+**Multi-repo needs directory access.** Claude Code works inside the
+directory it was started in. Sibling repos are outside it, so reading or
+editing them gets a permission prompt or is refused, unless every
+component's `location` is listed under `permissions.additionalDirectories`
+in the hub's `.claude/settings.json` (see the README's multi-repo install
+steps), or added for one session with `--add-dir`. If an agent is refused
+access to a component, stop and ask the human to add the directory; don't
+work around it. Git commands against a component run as
+`git -C <location> ...`, so they always hit that component's repo and
+never the hub's by accident.
+
 ## Settings table
 
 Lives in `CLAUDE.md` at the project root for a `single-repo` project, or in
 each component's own `CLAUDE.md` for `monorepo`/`multi-repo` (pointed to by
 that row's `settings` column above).
 
-| Placeholder | What it is | Example |
-|---|---|---|
-| `{{STACK}}` | Primary language/framework | TypeScript + Next.js, Kotlin + Jetpack Compose, Swift + SwiftUI, Python + Django |
-| `{{PKG_MANAGER}}` | Dependency/script runner | `npm`, `pnpm`, `poetry`, `go`, `gradle`, `swift package` |
-| `{{TEST_CMD}}` | Runs the full automated test suite | `npm test`, `pytest`, `./gradlew test`, `xcodebuild test` |
-| `{{LINT_CMD}}` | Static analysis / style check | `npm run lint`, `ruff check .`, `./gradlew ktlintCheck`, `swiftlint` |
-| `{{SCHEMA_CHECK_CMD}}` | Verifies the data-layer contract is consistent (migrations applied, types generated, test fixtures match real schema, etc.) — a no-op command for a component with no schema of its own (most clients) | `npm run schema:check` |
-| `{{PRIMARY_DATASTORE}}` | What production data lives in (database/service components) | Postgres, DynamoDB, a third-party API |
-| `{{TEST_DATASTORE}}` | What tests run against (database/service components) | SQLite, an in-memory fake, a sandbox tenant |
-| `{{ISSUE_TRACKER}}` | Where requirements/bugs are tracked | Jira, Linear, GitHub Issues |
-| `{{ISSUE_PREFIX}}` | Ticket key prefix, if any | `PROJ-`, `#` |
-| `{{VCS_HOST}}` | Where PRs are opened | GitHub, GitLab, Bitbucket |
-| `{{DEPLOY_CMD}}` | How an approved change reaches users — a server deploy for service/web components, a store submission command/process for mobile/extensions | `helm upgrade ...`, `fly deploy`, `fastlane android deploy`, `fastlane ios release`, `web-ext sign && submit` |
-| `{{MAIN_BRANCH}}` | The protected branch nothing commits to directly | `main`, `master` |
-| `{{DOCS_ROOT}}` | Where per-feature artefact folders live. In `monorepo`/`multi-repo`, this only needs a real value in `{{HUB_REPO}}`'s own `CLAUDE.md` — other components don't need their own `{{DOCS_ROOT}}` | `docs` |
+| Placeholder | What it is | Example | Value |
+|---|---|---|---|
+| `{{STACK}}` | Primary language/framework | TypeScript + Next.js, Kotlin + Jetpack Compose, Swift + SwiftUI, Python + Django | |
+| `{{PKG_MANAGER}}` | Dependency/script runner | `npm`, `pnpm`, `poetry`, `go`, `gradle`, `swift package` | |
+| `{{TEST_CMD}}` | Runs the full automated test suite | `npm test`, `pytest`, `./gradlew test`, `xcodebuild test` | |
+| `{{LINT_CMD}}` | Static analysis / style check | `npm run lint`, `ruff check .`, `./gradlew ktlintCheck`, `swiftlint` | |
+| `{{SCHEMA_CHECK_CMD}}` | Verifies the data-layer contract is consistent (migrations applied, types generated, test fixtures match real schema, etc.) — a no-op command for a component with no schema of its own (most clients) | `npm run schema:check` | |
+| `{{PRIMARY_DATASTORE}}` | What production data lives in (database/service components) | Postgres, DynamoDB, a third-party API | |
+| `{{TEST_DATASTORE}}` | What tests run against (database/service components) | SQLite, an in-memory fake, a sandbox tenant | |
+| `{{ISSUE_TRACKER}}` | Where requirements/bugs are tracked | Jira, Linear, GitHub Issues | |
+| `{{ISSUE_PREFIX}}` | Ticket key prefix, if any | `PROJ-`, `#` | |
+| `{{VCS_HOST}}` | Where PRs are opened | GitHub, GitLab, Bitbucket | |
+| `{{DEPLOY_CMD}}` | How an approved change reaches users — a server deploy for service/web components, a store submission command/process for mobile/extensions | `helm upgrade ...`, `fly deploy`, `fastlane android deploy`, `fastlane ios release`, `web-ext sign && submit` | |
+| `{{MAIN_BRANCH}}` | The protected branch nothing commits to directly | `main`, `master` | |
+| `{{DOCS_ROOT}}` | Where per-feature artefact folders live. In `monorepo`/`multi-repo`, this only needs a value in `{{HUB_REPO}}`'s own `CLAUDE.md` — other components don't need their own `{{DOCS_ROOT}}` | `docs` | |
 
-Skills and agents reference these as literal `{{PLACEHOLDER}}` tokens in
-their instructions. Before running `/feature` for the first time on a new
-project (or a new component), replace every placeholder above with the real
-value (or leave a short inline note like `{{TEST_CMD}} = npm test` right
-under the table — the skills read this file, not a separate config format).
+Fill in every Value before running `/feature` for the first time on a new
+project (or a new component). For monorepo/multi-repo, each component's own
+copy of this table lives in a small file made from
+[templates/component-CLAUDE.md](templates/component-CLAUDE.md), not a copy
+of this whole file.
 
 ## The six phases, three commands
 
@@ -152,6 +172,7 @@ Every feature gets one folder, living in `{{HUB_REPO}}` for
 {{DOCS_ROOT}}/<feature-slug>/
   specs/
     spec.md                  # Phase 1 — includes a Components touched section
+    interview-log.md         # Phase 1 — every interview question and answer, verbatim
   acceptance/
     *.feature                # Phase 1 — Gherkin, one file per area
   design/
@@ -245,12 +266,18 @@ the trail.
 ## Layering rule
 
 **Within one component**, default task ordering for `/implement plan`:
-**schema → service → api → client**. Each task is a thin vertical slice
-that one test can pin down — many small tasks beat a few large ones. If a
-component's `{{STACK}}` doesn't have these four layers, replace this rule
-with the equivalent ordering for its architecture (e.g. for an event-driven
-service: schema → producer → consumer → client) and note the substitution
-in that component's own `CLAUDE.md`.
+**schema → service → api → client**. The layering rule sets the *order*
+work happens in, not the size of a task. A task is one cohesive change,
+sliced by related functionality and touched files: everything the
+component needs for one observable capability, which may span several
+layers. Work with no observable behaviour of its own is folded into the
+task that uses it, and changes to the same file stay in the same task. See
+[implementation-planner](.claude/agents/implementation-planner.md) for the
+merge and split rules. If a component's `{{STACK}}` doesn't have these
+four layers, replace this rule with the equivalent ordering for its
+architecture (e.g. for an event-driven service: schema → producer →
+consumer → client) and note the substitution in that component's own
+`CLAUDE.md`.
 
 **Across components** (monorepo / multi-repo), task order is a topological
 sort of the Components table's `depends-on` graph, modified by contract-
@@ -280,14 +307,18 @@ component's status alongside whatever else is still proceeding.
 
 ## Branch protection
 
-A git hook (installed per the [README](README.md#install)) physically
-refuses commits made directly on a component's `{{MAIN_BRANCH}}`. This is a
-backstop, not the only safeguard — the Build phase orchestrator also checks
-the current branch before every commit, in whichever component's repo it's
+Two git hooks (installed per the [README](README.md#install)) physically
+guard a component's `{{MAIN_BRANCH}}`: `pre-commit` refuses commits made
+on it, and `pre-push` refuses pushes to it, which closes the gap of a
+local merge onto `{{MAIN_BRANCH}}` followed by a push. They're a backstop,
+not the only safeguard — the Build phase orchestrator also checks the
+current branch before every commit, in whichever component's repo it's
 about to commit to. The only way code reaches `{{MAIN_BRANCH}}` is a human
-merging an approved PR (Phase 6). In `multi-repo`, install the hook
-separately in every component repo — there is no shared `.git` to hook
-once. In `monorepo`, one hook at the repo root covers every package.
+merging an approved PR on `{{VCS_HOST}}` (Phase 6). `--no-verify` skips
+both hooks; that's a deliberate human escape hatch, and no skill or agent
+ever uses it. In `multi-repo`, install the hooks separately in every
+component repo — there is no shared `.git` to hook once. In `monorepo`, one
+pair at the repo root covers every package.
 
 ## Evidence over claims
 

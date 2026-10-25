@@ -1,6 +1,8 @@
 ---
 name: implement
 description: Phases 3-5 (Plan, Build, Review) of the agentic SDLC — turns an approved design into an ordered task list (across one or many components), drives each task through TDD with an independent review before every commit, then runs a layered feature-wide review before the final human gate. Use when the user invokes /implement, /implement plan, /implement build, or /implement review, or wants to resume a feature that already has a plan.md/progress.md.
+argument-hint: "[plan|build|review]"
+disable-model-invocation: true
 ---
 
 # /implement — Plan, Build, Review
@@ -33,6 +35,13 @@ component's own `CLAUDE.md` for its `{{TEST_CMD}}`, `{{LINT_CMD}}`,
 `{{SCHEMA_CHECK_CMD}}`, and `{{MAIN_BRANCH}}` — these are per-component, not
 inherited from the hub.
 
+Run every git command for a component as `git -C <resolved path> ...`
+(branch check, commit, SHA lookup), so it can't land in the hub's repo by
+mistake. In multi-repo, if reading or editing a component is refused
+because its directory isn't one Claude Code has access to, stop and ask
+the user to add it (see `CLAUDE.md`, "Multi-repo needs directory access")
+instead of finding a way around the refusal.
+
 ## Argument handling
 
 - `/implement` (no argument) — read `progress.md` if it exists and resume
@@ -57,11 +66,18 @@ inherited from the hub.
    marked `parallel-ok` can run alongside its dependency's own tasks rather
    than strictly after them (see `CLAUDE.md`'s "Cross-component work" and
    "Layering rule" sections).
-2. Check the coverage map yourself: every acceptance scenario has at least
-   one task, or an explicit, reasoned exclusion. For a scenario that spans
-   components, confirm each component's slice of it is covered, not just
-   one. If something's silently missing, send it back to
-   `implementation-planner` before showing the plan to the user.
+2. Check the plan yourself before showing it to anyone:
+   - **Coverage**: every acceptance scenario has at least one task, or an
+     explicit, reasoned exclusion. For a scenario that spans components,
+     confirm each component's slice of it is covered, not just one.
+   - **Granularity**: tasks are sliced by related functionality and
+     touched files (see `implementation-planner`). If most tasks touch one
+     or two files, a task has no observable behaviour of its own, or
+     several tasks in a component edit the same file without a stated
+     reason, the plan is too granular.
+
+   If either check fails, send it back to `implementation-planner` with
+   the specific problem before showing the plan to the user.
 3. **Gate — Senior Dev / orchestrator confirms the plan with the user.**
    Walk through the task list and coverage map — for monorepo/multi-repo,
    group it by component so the human can see the shape of the cross-repo
@@ -101,17 +117,19 @@ component order from Plan). For each task:
    present on disk.
 2. **Branch safety check.** Confirm the current branch in *that
    component's* repo is not its `{{MAIN_BRANCH}}` before doing anything.
-   The git hook (see `hooks/pre-commit-branch-protection.sh`, installed per
-   component) is the backstop, not the only check — catch this yourself
-   first and tell the user if you're unexpectedly on a protected branch.
+   The branch-protection git hooks (installed per component) are the
+   backstop, not the only check — catch this yourself first and tell the
+   user if you're unexpectedly on a protected branch. Never pass
+   `--no-verify` to get past a hook.
    For a feature touching several components, each one needs its own
    feature branch (naming them consistently, e.g. the same
    `<feature-slug>`, is good practice but not enforced by this skill).
 3. Mark the task `in-progress` in `progress.md`.
-4. Dispatch `task-implementer`, scoped to the resolved component path. It
-   writes the failing test, confirms RED for the right reason, writes
-   minimal code, confirms GREEN plus lint plus schema-check — all using
-   that component's own commands. If the task is `parallel-ok` (planned
+4. Dispatch `task-implementer`, scoped to the resolved component path. For
+   each `done-when` condition in turn it writes the failing test, confirms
+   RED for the right reason, and writes minimal code to GREEN; then it runs
+   the full suite plus lint plus schema-check — all using that component's
+   own commands. If the task is `parallel-ok` (planned
    against a contract rather than a live dependency), remind it to
    implement against `design/contracts/<contract-name>.md` and, if the
    plan calls for one, to leave the trailing integration task that swaps a
@@ -150,14 +168,23 @@ reviewed — re-run step 5 onward for it rather than assuming partial credit.
 
 Runs once every task in `progress.md` is `done`.
 
+**You are the only writer of `review-report.md`.** Every review agent
+below is read-only: it returns its findings in its final message, and you
+copy them into the report under the right component's section (or the
+Integration review section) without softening or dropping anything.
+Keeping one writer means reviews of different components can run side by
+side without overwriting each other. When a finding is fixed and
+re-verified, update its entry rather than deleting it, so the report shows
+what was found and how it was closed.
+
 **Layer 1** (per-task review) is already satisfied by Build — nothing to do
 here.
 
 **Layer 2 — feature-wide, per component.** For each component touched,
-dispatch `feature-reviewer` scoped to it. It re-runs that component's full
-suite itself, checks its slice of acceptance coverage, design/UX fidelity,
-and a senior-bar security pass, and writes its section of
-`review-report.md`.
+dispatch `feature-reviewer` scoped to it. These can run in parallel. Each
+re-runs that component's full suite itself, checks its slice of acceptance
+coverage, design/UX fidelity, and a senior-bar security pass, and returns
+its section of the report.
 
 **Layer 2.5 — cross-component integration (monorepo / multi-repo,
 cross-component features only).** Dispatch `contract-reviewer` once per
@@ -166,8 +193,9 @@ component's actual implementation against what the contract promised, and
 the consuming component's actual implementation against what the contract
 let it assume — catching drift between what was agreed at design time and
 what either side actually built (a renamed field, a changed status code, a
-dropped parameter). It writes an **Integration review** section in
-`review-report.md`. Skip this layer entirely for single-component features.
+dropped parameter). It returns entries for the **Integration review**
+section of `review-report.md`. Skip this layer entirely for
+single-component features.
 
 **Layer 3 — architectural (optional).** For **major**-size features (per
 the Phase 2 triage recorded in `design/system-design.md`), or if the user

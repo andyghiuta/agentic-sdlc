@@ -62,7 +62,8 @@ both the producing and consuming components). Check:
   feature isn't actually integrated yet, whatever each component's own
   suite says.
 
-Findings go into `review-report.md`'s **Integration review** section,
-each tied to file:line in the relevant component, marked blocking or
-advisory. Blocking findings route through the fix loop like any other
+Return your findings in your final message, laid out as entries for
+`review-report.md`'s **Integration review** section, each tied to
+file:line in the relevant component and marked blocking or advisory. You
+don't write the file; the orchestrator does. Blocking findings route through the fix loop like any other
 layer-2-4 finding, sharing the shared 5-round final-review cap.

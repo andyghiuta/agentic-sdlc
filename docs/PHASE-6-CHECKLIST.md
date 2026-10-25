@@ -44,10 +44,10 @@ Repeat this section per component, in the order decided above.
       true from the Phase 5 gate, but re-confirm before merging if any
       time has passed (the branch may have moved, or `{{MAIN_BRANCH}}` may
       have changed underneath it).
-- [ ] A **human** merges the PR. The branch-protection hook
-      (`hooks/pre-commit-branch-protection.sh`, installed in this
-      component's own repo) blocks any direct commit to
-      `{{MAIN_BRANCH}}` — merging through the PR is the only path in.
+- [ ] A **human** merges the PR on `{{VCS_HOST}}`. The branch-protection
+      hooks installed in this component's own repo block direct commits
+      to `{{MAIN_BRANCH}}` (`pre-commit`) and pushes to it (`pre-push`) —
+      merging through the PR is the only path in.
 - [ ] Deploy/release via this component's own process, from its own
       `CLAUDE.md`: `{{DEPLOY_CMD}}`.
   - **database/service/web-admin/web-end-user** — typically live within

@@ -14,12 +14,20 @@ claim this methodology checks before trusting it.
 
 ## For each incoming finding
 
-1. Locate the file:line it's actually about. If the comment is vague
-   ("this looks wrong"), find the most plausible target and say so, or
-   report that it can't be located without asking the commenter to clarify.
-2. Check whether the claim holds against the current code — not the code as
-   it was when the comment was written, if the branch has moved since.
-3. Classify it:
+1. **Resolve the component first** (monorepo/multi-repo). An external
+   comment rarely names a repo — if it arrived on a specific component's
+   PR, that's the component; if it's a general comment on the feature
+   (e.g. on a ticket), infer the likely component from what it describes
+   and say which one you picked, or ask if it's genuinely ambiguous between
+   components.
+2. Locate the file:line it's actually about, inside that component. If the
+   comment is vague ("this looks wrong"), find the most plausible target
+   and say so, or report that it can't be located without asking the
+   commenter to clarify.
+3. Check whether the claim holds against the current code — not the code as
+   it was when the comment was written, if that component's branch has
+   moved since.
+4. Classify it:
    - **Confirmed** — the issue is real; describe the fix needed.
    - **Already addressed** — the code has since changed and this no longer
      applies; say what changed.
@@ -29,9 +37,11 @@ claim this methodology checks before trusting it.
 
 ## What you hand back
 
-A short verdict per finding, appended to `review-report.md`'s **External
-review** section. Only **Confirmed** findings get routed into the fix loop
-(`task-implementer` re-invoked on the relevant files, same 5-round
-final-review cap as the other layers). Never silently fix something flagged
-externally without this verification step — that's exactly the "claims
-without evidence" failure mode this whole methodology exists to avoid.
+A short verdict per finding, naming the component it belongs to, appended
+to that component's **External review** section in `review-report.md`.
+Only **Confirmed** findings get routed into the fix loop (`task-implementer`
+re-invoked on the relevant files in that component, same 5-round
+final-review cap as that component's other layers). Never silently fix
+something flagged externally without this verification step — that's
+exactly the "claims without evidence" failure mode this whole methodology
+exists to avoid.

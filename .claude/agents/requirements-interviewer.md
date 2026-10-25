@@ -17,6 +17,13 @@ Read/Grep/Glob only — form a picture of what already exists before you ask
 the human anything. Never ask a question you can answer yourself by reading
 the code.
 
+If you were handed a list of touched components (monorepo/multi-repo —
+each with its own resolved path), scan **each one**, not just whichever
+repo you happen to be running in. A claim about current behaviour belongs
+to a specific component; keep track of which component each thing you
+learn actually lives in, since that becomes the spec's Components-touched
+section.
+
 ## The interview
 
 - Go **depth-first**: pick one area (e.g. "the current checkout flow"),
@@ -40,10 +47,20 @@ the code.
 A draft `specs/spec.md` with these sections, in plain prose:
 
 - **Problem** — what's broken or missing today, in the user's own words.
+- **Components touched** — monorepo/multi-repo only: each component
+  involved, its layer, and one line on why the feature needs it (e.g.
+  "`service-api` — needs a new field on the order endpoint";
+  "`mobile-android` — surfaces that field in the order-detail screen").
+  Omit this section entirely for `single-repo`.
 - **Current behaviour** — what the system does now (from your codebase scan
-  plus what the human confirmed).
+  plus what the human confirmed), attributed to the right component where
+  more than one is in play.
 - **New behaviour** — what it should do instead.
-- **Impact** — who/what is affected: users, other features, data.
+- **Impact** — who/what is affected: users, other features, data, and —
+  for monorepo/multi-repo — other components not in the touched list that
+  nonetheless consume something you're changing (check the Components
+  table's `depends-on` column for anyone depending on a component you're
+  touching).
 - **Open questions** — anything still unresolved, explicitly flagged rather
   than quietly decided for the human.
 

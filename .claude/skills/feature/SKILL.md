@@ -1,6 +1,6 @@
 ---
 name: feature
-description: Phase 1 (Discover) of the agentic SDLC — interviews a new feature into existence, validates the resulting spec against the real codebase, and writes Gherkin acceptance tests. Use when the user wants to start a new feature, invokes /feature, or hands you a messy, informal feature request that needs turning into a proper spec before any design or code happens.
+description: Phase 1 (Discover) of the agentic SDLC — interviews a new feature into existence, validates the resulting spec against the real codebase (across every component it touches, in monorepo/multi-repo), and writes Gherkin acceptance tests. Use when the user wants to start a new feature, invokes /feature, or hands you a messy, informal feature request that needs turning into a proper spec before any design or code happens.
 ---
 
 # /feature — Discover
@@ -13,12 +13,14 @@ below are each done by a subagent so the work stays checked rather than
 self-reported.
 
 Read `CLAUDE.md` first if you haven't this session — you need
-`{{DOCS_ROOT}}` and the loop-cap table before starting.
+`{{DOCS_ROOT}}`, `{{REPO_MODE}}`, the Components table (if present), and the
+loop-cap table before starting.
 
 ## 0. Set up the feature folder
 
 Ask the user for a short feature slug if they haven't given one (kebab-case,
-e.g. `bulk-export`). Create:
+e.g. `bulk-export`). The folder lives in `{{HUB_REPO}}` for
+`monorepo`/`multi-repo` (just the project root for `single-repo`). Create:
 
 ```
 {{DOCS_ROOT}}/<feature-slug>/specs/
@@ -29,20 +31,42 @@ If `specs/spec.md` already exists and looks partial (missing sections, open
 questions still unanswered), this is a **resume** — tell the user you're
 continuing an interrupted interview rather than starting over.
 
+## 0.5. Identify touched components (monorepo / multi-repo only)
+
+Skip this step entirely for `{{REPO_MODE}} = single-repo`.
+
+From the user's raw request and a quick read of the Components table in
+`CLAUDE.md`, name a first-guess list of which components this feature
+probably touches (e.g. "sounds like this needs `service-api` and
+`enduser-web`"). Say this out loud and let the human correct it before the
+interview starts — getting this wrong just means `requirements-interviewer`
+scans an unnecessary component or misses one, either of which step 1 can
+still surface and fix, but starting with a reasonable guess saves rounds.
+For any component in the guess list that isn't present on disk at its
+`location`, stop and tell the user before proceeding — don't interview
+against a component you can't actually read.
+
 ## 1. Interview
 
 Dispatch the `requirements-interviewer` subagent with the user's raw
-request and the feature folder path. It will scan the codebase itself and
-run the depth-first interview directly with the user (relay its questions
-and the user's answers faithfully — don't paraphrase away detail). It
-writes incrementally to `specs/spec.md` so the interview can be interrupted
-and resumed.
+request, the feature folder path, and — for monorepo/multi-repo — the list
+of touched components and their locations from step 0.5. It will scan each
+touched component's codebase itself and run the depth-first interview
+directly with the user (relay its questions and the user's answers
+faithfully — don't paraphrase away detail). It writes incrementally to
+`specs/spec.md` so the interview can be interrupted and resumed, and (for
+monorepo/multi-repo) includes a **Components touched** section listing each
+component, its layer, and why the feature needs it.
 
 When the interviewer reports the draft spec complete, move on.
 
 ## 2. Validate
 
-Dispatch `spec-validator` against the draft `specs/spec.md`.
+Dispatch `spec-validator` against the draft `specs/spec.md`. For
+monorepo/multi-repo, it checks claims against **every** component named in
+the spec's Components-touched section, not just one — a claim about
+`service-api`'s current behaviour gets checked against `service-api`'s
+code, not whichever repo happens to be open.
 
 - **Zero discrepancies** → go to step 3.
 - **Discrepancies found** → send them back to `requirements-interviewer`
@@ -62,7 +86,12 @@ per area of the spec, under `acceptance/`, in plain business language. Every
 scenario must trace to a specific section of `specs/spec.md` — if a
 scenario doesn't map cleanly to something the spec says, that's a sign the
 spec is incomplete; fix the spec, don't write a scenario for a requirement
-that doesn't exist yet in writing.
+that doesn't exist yet in writing. For monorepo/multi-repo, a scenario that
+exercises an end-to-end journey across components (e.g. a mobile action
+that depends on a new API field) stays as **one** scenario — don't split a
+single user-visible behaviour into one `.feature` file per component just
+because the implementation will eventually span repos; `/implement plan`
+is what breaks it into per-component tasks later.
 
 ## 4. Gate — PM / BA sign-off
 

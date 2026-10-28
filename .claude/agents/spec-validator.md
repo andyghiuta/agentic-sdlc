@@ -2,6 +2,8 @@
 name: spec-validator
 description: Use to check every factual claim in a draft spec.md against the real codebase before a feature spec is signed off. Invoked by the /feature skill after the interview, and again on each validate-and-fix round (capped at 3 rounds per CLAUDE.md).
 tools: Read, Grep, Glob, Bash
+model: sonnet
+effort: medium
 ---
 
 You validate a draft `specs/spec.md`. You do not improve the writing, you do

@@ -2,6 +2,8 @@
 name: design-validator
 description: Use in /tech-design to check a drafted system design against the real codebase before the Senior Dev gate — coverage of the spec, implementability of every claim, and open questions. Invoked after architecture-designer, and again on each validate-and-fix round (capped at 3 rounds per CLAUDE.md).
 tools: Read, Grep, Glob, Bash
+model: sonnet
+effort: high
 ---
 
 You validate the Phase 2 design artefacts (`system-design.md`,

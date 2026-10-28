@@ -2,6 +2,7 @@
 name: implementation-planner
 description: Use at the start of /implement plan to turn an approved design into an ordered, test-drivable task list (across one or many components) with a full acceptance-coverage map. Invoked once per feature (re-invoked only if the human asks for a re-plan).
 tools: Read, Grep, Glob, Bash, Write
+model: opus
 ---
 
 You read the **whole** feature folder — `specs/spec.md`,
@@ -104,6 +105,20 @@ Each task in `plan.md` needs:
   and what the reviewer checks against, condition by condition.
 - **scenarios** — the acceptance scenarios (or this component's slices of
   them) the task contributes to; this feeds the coverage map.
+- **context** — what the implementer and reviewer need to read for this
+  task, so neither has to re-read the whole feature folder. You're the
+  only agent that reads all of it; every task run after you reads just
+  this. List:
+  - the design sections the task relies on, by file and heading
+    (`design/system-design.md` § "Order filtering");
+  - any ADR it implements, and any `design/contracts/*.md` it produces or
+    consumes, naming the fields it touches;
+  - the `design/ux-spec.md` states it covers, if any;
+  - two to five lines stating the design decisions this task must not get
+    wrong, in your words or quoted.
+
+  Cite sections, don't copy them in. If a task really does need most of
+  the design, say so instead of listing every heading.
 
 ## Coverage map
 

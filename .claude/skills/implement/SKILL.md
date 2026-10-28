@@ -88,8 +88,12 @@ instead of finding a way around the refusal.
      or two files, a task has no observable behaviour of its own, or
      several tasks in a component edit the same file without a stated
      reason, the plan is too granular.
+   - **Context**: every task has a `context` entry, and the headings it
+     cites exist in the design files. Build agents read only what
+     `context` cites, so a missing or wrong citation means an implementer
+     works without the design it needed.
 
-   If either check fails, send it back to `implementation-planner` with
+   If any check fails, send it back to `implementation-planner` with
    the specific problem before showing the plan to the user.
 3. **Gate — Senior Dev / orchestrator confirms the plan with the user.**
    Walk through the task list and coverage map — for monorepo/multi-repo,
@@ -138,7 +142,11 @@ component order from Plan). For each task:
    feature branch (naming them consistently, e.g. the same
    `<feature-slug>`, is good practice but not enforced by this skill).
 3. Mark the task `in-progress` in `progress.md`.
-4. Dispatch `task-implementer`, scoped to the resolved component path. For
+4. Dispatch a fresh `task-implementer`, scoped to the resolved component
+   path, with the task id and its `context` entry from `plan.md`. It
+   reads only what `context` cites, not the whole feature folder. Start a
+   fresh implementer and reviewer for every task; never carry one over
+   from the previous task, since its context belongs to that task. For
    each `done-when` condition in turn it writes the failing test, confirms
    RED for the right reason, and writes minimal code to GREEN; then it runs
    the full suite plus lint plus schema-check — all using that component's
@@ -148,16 +156,28 @@ component order from Plan). For each task:
    plan calls for one, to leave the trailing integration task that swaps a
    mock for the real dependency once it's available rather than wiring
    straight to a dependency that may not exist yet.
-5. Dispatch `task-reviewer` (independent context, same component scope)
-   against the result. It re-runs everything itself and returns PASS or
-   FAIL with specifics.
+5. Dispatch a fresh `task-reviewer` (independent context, same component
+   scope, same task id and `context`) against the result. It re-runs
+   everything itself and returns PASS or FAIL with specifics.
 6. **PASS** → commit (one commit per task, in the task's own component
    repo, message referencing the task id), record the commit SHA and
    `status: done` in `progress.md`, move to the next task.
-   **FAIL** → re-dispatch `task-implementer` in fix mode with the
-   reviewer's findings, increment the task's round counter, go back to
-   step 5. This is the **per-task fix loop, capped at 5 rounds**
-   (`CLAUDE.md`).
+   **FAIL** → increment the task's round counter and send the reviewer's
+   findings, verbatim, to the **same** `task-implementer` as a follow-up
+   message (SendMessage, or however your tools continue a running agent).
+   It still has the task and design in context, so it doesn't re-read
+   them. Then send its new report to the **same** `task-reviewer` the same
+   way, and go back to the PASS/FAIL decision. Continuing the reviewer
+   doesn't weaken its independence, which comes from being separate from
+   the implementer. If your tools can't continue a running agent,
+   dispatch fresh ones with the task id, `context`, the findings and the
+   round number; that works because `plan.md` and the code are on disk.
+   This is the **per-task fix loop, capped at 5 rounds** (`CLAUDE.md`).
+   **Escalation, round 3** → a continued agent keeps its model, so for
+   fix round 3 dispatch a fresh `task-implementer` with the model set to
+   `opus`, passing the task id, `context`, the latest findings and the
+   round number. Continue that one for rounds 4-5. The reviewer stays as
+   it is.
    **Cap hit (round 5, still FAIL)** → mark the task `BLOCKED` in
    `progress.md` with the last reviewer findings attached, **halt Build for
    that component's remaining tasks and anything depending on it**, and
@@ -224,7 +244,14 @@ rarely says which repo it's about.
 
 **Fix loop.** Any blocking finding from layers 2-4 routes back to
 `task-implementer` (scoped to the relevant component and files) and then
-back to the layer that raised it, for re-verification. All of layers 2-4
+back to the layer that raised it, for re-verification. As in Build,
+continue agents instead of re-dispatching them: keep one implementer per
+component across its review fix rounds, and send each fix back to the
+**same** reviewer that raised the finding, as a follow-up message saying
+what changed, so it doesn't re-read the whole feature folder. Same
+fallback if your tools can't continue an agent, and the same round-3
+escalation to an `opus` implementer, counted on that component's review
+counter. All of layers 2-4
 together share the **final review fix loop, capped at 5 rounds per
 component, plus one shared counter for layer 2.5** (`CLAUDE.md`) — track
 counters per component, not one global counter, so a cap hit in one

@@ -318,6 +318,15 @@ because it writes code and makes commits. `/feature` and `/tech-design`
 can also be picked up from a plain request like "let's spec out bulk
 export".
 
+Each agent sets its own model in its frontmatter, so cost doesn't depend
+on the model your session runs. The agents that run per task or check
+facts against code (`task-implementer`, `task-reviewer`, the validators,
+`contract-reviewer`, `external-review-handler`) use Sonnet. The ones whose
+mistakes carry into everything after them (the interviewer, the designer,
+the planner, `feature-reviewer`, `architecture-reviewer`) use Opus. A task
+still failing review at fix round 3 gets an Opus implementer. Change
+`model:` and `effort:` in `.claude/agents/*.md` to retune.
+
 Then work through [Phase 6's checklist](docs/PHASE-6-CHECKLIST.md) by hand:
 decide rollout order across components, merge, deploy/release each one
 (accounting for app-store/extension-store review lead time), validate the

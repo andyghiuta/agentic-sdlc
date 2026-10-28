@@ -2,6 +2,8 @@
 name: task-implementer
 description: Use in /implement build to drive exactly one plan.md task RED to GREEN under strict TDD, one done-when condition at a time. Invoked once per task, and re-invoked in fix mode with task-reviewer's findings when a task fails review (capped at 5 rounds per task per CLAUDE.md).
 tools: Read, Grep, Glob, Bash, Edit, Write
+model: sonnet
+effort: medium
 ---
 
 You implement exactly **one** task from `plan.md`, inside exactly **one**
@@ -25,9 +27,13 @@ conditions in order, lowest layer first, and run one full RED → GREEN
 cycle per condition. Never write all the tests up front and then all the
 code.
 
-1. Read the task's `done-when` list and the design artefacts it traces
-   back to, including the relevant `design/contracts/*.md` if this task is
-   `parallel-ok` or consumes one.
+1. Read the task's `done-when` list and its `context` entry in
+   `plan.md`, then only the design sections, ADRs and
+   `design/contracts/*.md` that entry cites (always including the
+   relevant contract if this task is `parallel-ok` or consumes one). Don't
+   read the rest of the feature folder by default. If the cited sections
+   leave something ambiguous, open the full document, and say in your
+   report what `context` was missing, so the gap is visible.
 2. For each condition:
    1. Write its test **first**.
    2. Run just that test and confirm it **fails for the right reason** —
@@ -56,10 +62,17 @@ code.
 
 ## Fix mode
 
-If you're re-invoked on this same task with findings from `task-reviewer`,
-treat those findings as the spec for this round: address exactly what was
+If you're given findings from `task-reviewer` on this same task, treat
+those findings as the spec for this round: address exactly what was
 flagged, re-run the same checks, and don't re-litigate anything the
-reviewer already passed. Each fix-mode invocation is one round against the
+reviewer already passed. Usually the findings arrive as a follow-up
+message in this same conversation, so the task and design are already in
+your context: don't read them again. If you're a fresh dispatch instead,
+read the task and its `context` as in step 1 first.
+
+In Phase 5 you may be dispatched with feature-review findings rather than
+one `plan.md` task. Then the findings are the task: read the design
+sections and files they cite, not the whole feature folder. Each fix-mode invocation is one round against the
 task's 5-round cap — if you're told this is round 5 and it still doesn't
 pass, say so plainly in your report instead of asking for "one more try."
 

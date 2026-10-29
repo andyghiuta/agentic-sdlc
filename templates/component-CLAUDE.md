@@ -31,6 +31,7 @@ empty Value means "not configured": stop and ask rather than guess.
 | `{{VCS_HOST}}` | Where this component's PRs are opened | GitHub, GitLab | |
 | `{{DEPLOY_CMD}}` | How an approved change reaches users: a deploy for service/web, a store submission for mobile/extensions | `helm upgrade ...`, `fastlane ios release`, `web-ext sign` | |
 | `{{MAIN_BRANCH}}` | The protected branch nothing commits to directly | `main` | |
+| `{{WORKTREE_SETUP_CMD}}` | Optional, multi-repo only (a monorepo uses the root's): run from a new worktree's root to copy ignored files and install dependencies, when you opt into a worktree | `cp ../../.env .env && npm ci` | |
 
 ## Layering override (optional)
 

@@ -28,7 +28,7 @@ report.
 - **Read the project's `CLAUDE.md`**, at the root of the project you're
   working in, if you haven't this session. You need the settings
   placeholders, `{{REPO_MODE}}`, the Components table (if present), the
-  layering rule, and the loop-cap table. Don't look for it relative to
+  layering rule, the loop-cap table, and the Worktrees section. Don't look for it relative to
   this skill's own folder: when the skill is installed as a plugin, the
   files beside it belong to the plugin, not the project. If the project's
   `CLAUDE.md` is a component settings file (it has a **Hub** line), read
@@ -53,7 +53,7 @@ dispatching anything for a task, look up that component's `location` in
 resolved path to the subagent so it reads/writes/runs commands there — not
 in `{{HUB_REPO}}`, which only holds the feature's artefacts. Also read that
 component's own `CLAUDE.md` for its `{{TEST_CMD}}`, `{{LINT_CMD}}`,
-`{{SCHEMA_CHECK_CMD}}`, and `{{MAIN_BRANCH}}` — these are per-component, not
+`{{SCHEMA_CHECK_CMD}}`, `{{MAIN_BRANCH}}`, and `{{WORKTREE_SETUP_CMD}}` — these are per-component, not
 inherited from the hub.
 
 Run every git command for a component as `git -C <resolved path> ...`
@@ -110,6 +110,15 @@ instead of finding a way around the refusal.
    confirmation before writing any code. This gate has no automated loop —
    it's a conversation; iterate on the plan directly with the user as long
    as it takes.
+   In the same conversation, ask whether Build should run in a
+   **worktree** (see `CLAUDE.md`'s Worktrees section). The default is
+   **no**: many changes don't need one, and a worktree doesn't have the
+   main checkout's ignored files (`.env` and the like) unless
+   `{{WORKTREE_SETUP_CMD}}` brings them over. Skip the question if this
+   session is already running in a worktree. Add the answer to
+   `progress.md` yourself as its `Worktree` line (the planner doesn't
+   write one); Build creates the worktree, so the choice carries over to
+   a fresh session.
 4. **Offer a fresh session for Build.** Once the plan is confirmed,
    everything Build needs is on disk (`plan.md`, `progress.md`, the
    design). Tell the user Build can start in a fresh session (`/clear` or
@@ -125,6 +134,8 @@ instead of finding a way around the refusal.
 ```markdown
 # Progress — <feature-slug>
 
+Worktree: no | yes — <component>: <path> (branch <name>), ...
+
 | Task | Component | Status | Rounds | Commit SHA |
 |---|---|---|---|---|
 | T1 | service-api | pending | 0 | — |
@@ -136,7 +147,10 @@ instead of finding a way around the refusal.
 ```
 
 (Drop the `Component` column entirely for `single-repo` — it's the original
-v1 format.) Status values: `pending`, `in-progress`, `done`, `BLOCKED`.
+v1 format.) `Worktree` starts as `no` or `yes`; Build fills in each
+component's path and branch once it creates them (for `single-repo`
+and `monorepo`, one entry named after the repo). Status values:
+`pending`, `in-progress`, `done`, `BLOCKED`.
 Update this file after every task transition, not just at the end of Build
 — it's the resume mechanism and the human's live view into where the
 feature stands, across however many repos it touches.
@@ -145,10 +159,23 @@ feature stands, across however many repos it touches.
 
 Process tasks from `plan.md` in order, respecting `depends-on` (both the
 intra-component task order and, for monorepo/multi-repo, the cross-
-component order from Plan). For each task:
+component order from Plan).
+
+**Worktree.** If `progress.md` says `Worktree: yes`, then before a
+component's first task create its worktree and run
+`{{WORKTREE_SETUP_CMD}}` in it, as `CLAUDE.md`'s Worktrees section
+describes, and record its path and branch in the `Worktree` line. From
+then on, that component's resolved path is the worktree: every
+dispatch, test run and `git -C` command for it uses the worktree path.
+The feature folder stays where it is, in the main checkout. Before the
+first task, run the component's `{{TEST_CMD}}` in the new worktree; if it
+isn't green, stop and tell the user. A broken baseline would make every
+task's RED and GREEN meaningless, and it isn't this feature's to fix.
+
+For each task:
 
 1. **Resolve the component** (see above) and confirm its repo/package is
-   present on disk.
+   present on disk (or its worktree, if one is recorded).
 2. **Branch safety check.** Confirm the current branch in *that
    component's* repo is not its `{{MAIN_BRANCH}}` before doing anything.
    The branch-protection git hooks (installed per component) are the
@@ -237,6 +264,10 @@ file if a branch has been rebased or amended out from under it. Continue
 from the first `pending` or `in-progress` task per the plan's order. A task
 left `in-progress` from an interrupted run should be treated as not yet
 reviewed — re-run step 5 onward for it rather than assuming partial credit.
+If the `Worktree` line records a path, check it still exists and is on
+the recorded branch (`git -C <path> branch --show-current`) before using
+it; if it's gone, stop and ask the user rather than recreating it on top
+of commits that may only exist there.
 
 ## Phase 5 — Review
 
@@ -244,7 +275,8 @@ Runs once every task in `progress.md` is `done`. If Build ran in this
 session, offer a fresh one for Review first (`/clear` or a new session,
 then `/implement review`), for the same reason as after the plan gate:
 Review needs `progress.md`, the feature folder and the code, none of
-Build's conversation.
+Build's conversation. If `progress.md` records worktrees, every review
+agent and fix round below runs against those paths.
 
 **You are the only writer of `review-report.md`.** Every review agent
 below is read-only: it returns its findings in its final message, and you
@@ -333,3 +365,9 @@ the project's `docs/PHASE-6-CHECKLIST.md` (copied in at setup) for what
 comes next, including the staggered-rollout notes for components with
 slower release cadences (mobile app store review, browser-extension store
 review).
+
+If Build ran in worktrees, Review used them too: every review agent and
+fix round gets the worktree path recorded in `progress.md`, not the main
+checkout's. Once the PRs are open, remind the user the worktrees are
+still there and offer to remove them (see `CLAUDE.md`'s Worktrees
+section); remove them only on a yes.

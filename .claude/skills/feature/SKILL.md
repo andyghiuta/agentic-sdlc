@@ -29,6 +29,14 @@ rather than self-reported.
   `agentic-sdlc:<name>` (`agentic-sdlc:requirements-interviewer`). Use
   whichever form your agent list shows.
 
+If the request reads like a bug report, or a small change that looks
+within `/fix`'s limits (`CLAUDE.md`), say so and suggest `/fix` instead,
+which skips the spec, Gherkin and design work. Carry on with `/feature`
+if the user prefers. If this run starts from an escalated
+`{{DOCS_ROOT}}/fixes/<fix-slug>.md`, pass it to `requirements-interviewer`
+with the raw request: its Root cause or Current behaviour section is
+already checked against the code.
+
 ## 0. Set up the feature folder
 
 Ask the user for a short feature slug if they haven't given one (kebab-case,

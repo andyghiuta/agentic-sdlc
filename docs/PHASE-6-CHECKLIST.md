@@ -1,11 +1,20 @@
 # Phase 6 — Ship & Learn (manual checklist)
 
-Phases 1-5 are driven by `/feature`, `/tech-design`, and `/implement`.
+Phases 1-5 are driven by `/feature`, `/tech-design`, and `/implement`
+(or, for a bug or small change, all compressed into `/fix`).
 Phase 6 is **not automated** — this is an honest gap, not an oversight:
 merging, deploying, and confirming real-world value are consequential
 enough that this methodology keeps them a human practice today. Treat this
 page as a checklist to run through by hand once a feature's Phase 5 gate
 has closed, for every component the feature touched.
+
+**For a `/fix`**, use the same checklist with two substitutions: the PR
+links `{{DOCS_ROOT}}/fixes/<fix-slug>.md` instead of a feature folder, and
+`/fix`'s Gate 2 sign-off (logged in that file) stands in for the Phase 5
+gate and `review-report.md`. "Validate outcome" means the original
+reproduction no longer happens in production; a fix has no `.feature`
+files. A short retrospective is still worth it when the bug points at a
+check the harness should have made.
 
 See [`CLAUDE.md`](../CLAUDE.md) for the `{{PLACEHOLDER}}` settings
 referenced below, including `{{REPO_MODE}}` and the Components table. For
@@ -96,7 +105,7 @@ on the assumption that "the PR merged" means "users have this everywhere."
       the wrong kind of question, an agent prompt that missed a check, a
       `CLAUDE.md` setting (workspace-level or per-component) that was wrong
       or missing, a contract that drifted from what got built — anything
-      that `/feature`, `/tech-design`, `/implement`, or one of the
+      that `/feature`, `/tech-design`, `/implement`, `/fix`, or one of the
       subagents in `.claude/agents/` could do better next time.
 - [ ] Produce a concrete output: a PR that edits the harness itself —
       `.claude/skills/*/SKILL.md`, `.claude/agents/*.md`, or `CLAUDE.md`

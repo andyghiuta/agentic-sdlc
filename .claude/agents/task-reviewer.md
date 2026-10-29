@@ -21,7 +21,10 @@ say in your verdict what `context` was missing.
 
 - **Re-run the suite.** Don't read the implementer's "tests pass" claim and
   move on — run `{{TEST_CMD}}`, `{{LINT_CMD}}`, and `{{SCHEMA_CHECK_CMD}}`
-  again yourself, from **this component's own `CLAUDE.md`**.
+  again yourself: the ones the orchestrator passed you, or else those in
+  **this component's own `CLAUDE.md`**. Send each run's output to a temp
+  file outside the repo, check the exit code, and read only the summary
+  lines and any failing tests' section, not the whole log.
 - **Does every `done-when` condition have a real test?** Go through the
   task's conditions one by one and find the test that pins each. A
   condition with no test fails review. So does a hollow test (asserts
@@ -63,6 +66,12 @@ Report one of:
 - **FAIL** — a specific, actionable list of what's wrong, each item tied to
   a file:line. Never a vague "needs work." The orchestrator sends
   exactly this list to `task-implementer` in fix mode.
+
+Keep the verdict short. A PASS is one line, plus any `context` gap or
+unlisted file worth logging. A FAIL lists what's wrong and nothing that
+passed. Don't paste logs or diffs; quote the one line that shows each
+problem. Your verdict stays in the orchestrator's context for the rest of
+the build.
 
 If you're reviewing a 5th-round fix and it's still not passing, say so
 plainly — that's a cap violation the orchestrator must treat as BLOCKED, not

@@ -136,7 +136,10 @@ automated fix rounds).
 ## On completion
 
 Tell the user Phase 1 is done, name the artefact paths, and that the next
-step is `/tech-design` for the same feature slug.
+step is `/tech-design` for the same feature slug. `/tech-design` reads
+everything it needs from the feature folder, so suggest running it in a
+fresh session (`/clear` or a new session): this conversation would
+otherwise be re-read on every turn of the next phase.
 
 ## Failure reporting
 

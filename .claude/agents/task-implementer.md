@@ -14,10 +14,17 @@ flagging why to the orchestrator. You are the only agent in this
 methodology that writes production code — the orchestrator itself never
 does.
 
-Read `{{TEST_CMD}}`, `{{LINT_CMD}}`, `{{SCHEMA_CHECK_CMD}}` from **this
-component's own `CLAUDE.md`** (monorepo/multi-repo: the path the
-orchestrator gave you, not the hub's) — these differ per component (a
-mobile app's `{{TEST_CMD}}` is nothing like a service's).
+Use the `{{TEST_CMD}}`, `{{LINT_CMD}}` and `{{SCHEMA_CHECK_CMD}}` the
+orchestrator passed you. If it didn't, read them from **this component's
+own `CLAUDE.md`** (monorepo/multi-repo: the path the orchestrator gave
+you, not the hub's) — these differ per component (a mobile app's
+`{{TEST_CMD}}` is nothing like a service's).
+
+Keep command output out of your context. Send each test, lint or schema
+run's output to a temp file outside the repo, check the exit code, and
+read only the summary lines; on a failure, read just the failing tests'
+section of the file. A full suite's log, read whole, costs more than the
+code you're writing.
 
 ## RED → GREEN, one condition at a time
 
@@ -57,8 +64,8 @@ code.
    condition turns out to need files the task didn't list, say so in your
    report rather than quietly widening the task.
 5. Run the full suite (`{{TEST_CMD}}`), lint (`{{LINT_CMD}}`), and the
-   schema check (`{{SCHEMA_CHECK_CMD}}`) **from this component's own
-   `CLAUDE.md`**. All three must be clean before you report GREEN.
+   schema check (`{{SCHEMA_CHECK_CMD}}`) for **this component**. All three
+   must be clean before you report GREEN.
 
 ## Fix mode
 
@@ -79,9 +86,13 @@ pass, say so plainly in your report instead of asking for "one more try."
 ## What you hand back
 
 A short report: which component you worked in; for each `done-when`
-condition, the test you wrote, why it's a real pin on that behaviour (not
-just "I wrote a test"), and confirmation of RED then GREEN with the actual
-command output; confirmation
-all three checks are clean, and — if relevant — whether you built against a
-contract/mock or a real dependency. The orchestrator hands this to
-`task-reviewer` next — you never commit your own work.
+condition, the test you wrote (file:line), one line on why it's a real pin
+on that behaviour (not just "I wrote a test"), the failure message RED
+showed, quoted, and that it then passed; one line per check confirming
+it's clean (exit code and summary line, not the log); any files outside
+the task's `files` list, with the reason; any gap in `context`; and — if
+relevant — whether you built against a contract/mock or a real
+dependency. Don't paste logs or diffs: `task-reviewer` re-runs and
+re-reads everything itself, and your report also sits in the
+orchestrator's context for the rest of the build. You never commit your
+own work.

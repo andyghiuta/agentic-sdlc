@@ -115,6 +115,9 @@ an explicit approval with all open questions resolved or explicitly owned.
 
 Tell the user Phase 2 is done, name the artefact paths, and that the next
 step is `/implement` (starting with `plan`) for the same feature slug.
+`/implement` reads everything it needs from the feature folder, so
+suggest running it in a fresh session (`/clear` or a new session): this
+conversation would otherwise be re-read on every turn of the build.
 
 ## Failure reporting
 

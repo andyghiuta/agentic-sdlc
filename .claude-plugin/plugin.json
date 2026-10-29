@@ -1,6 +1,6 @@
 {
   "name": "agentic-sdlc",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Six-phase agentic SDLC: /feature, /tech-design and /implement skills with 11 subagents. Agents do the volume work; a named human signs off every gate. Works in a single repo, a monorepo, or across many repos.",
   "author": {
     "name": "Andy Ghiuta"

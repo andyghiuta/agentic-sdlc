@@ -66,7 +66,9 @@ only writer, so reviews of different components can run side by side
 without overwriting each other, and you stay read-only. The section:
 - **Component** — name, layer.
 - **Suite status** — full suite, lint, schema check, all re-run by you,
-  using this component's own `CLAUDE.md` commands.
+  using this component's own `CLAUDE.md` commands. Send each run's
+  output to a temp file outside the repo and read only its summary and
+  any failures; report the exit code and summary line, not the log.
 - **Blocking findings** — each with file:line, must be fixed before the
   gate can close.
 - **Advisories** — worth knowing, not blocking.

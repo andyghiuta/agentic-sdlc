@@ -327,6 +327,21 @@ the planner, `feature-reviewer`, `architecture-reviewer`) use Opus. A task
 still failing review at fix round 3 gets an Opus implementer. Change
 `model:` and `effort:` in `.claude/agents/*.md` to retune.
 
+Your own session's model is still your choice, and during `/implement` it
+runs the orchestrator, which can be the largest single share of a
+feature's usage, even in a session that only runs `/implement build`:
+every turn re-reads its whole conversation, and the conversation grows
+with each task. The biggest lever is a Sonnet session for
+`/implement build`, whose orchestration is mechanical (dispatch, relay,
+commit); keep Opus for the gates if you like. For a long Build, stop and
+resume it in a fresh session now and then (`/clear`, then
+`/implement build`); `progress.md` picks it up exactly where it stopped.
+The same goes for starting each phase in its own session, since every
+phase reads what it needs from the feature folder. The orchestrator also
+batches its per-task bookkeeping into as few turns as it can, and agents
+keep their reports short and don't read test logs whole, for the same
+reason.
+
 Then work through [Phase 6's checklist](docs/PHASE-6-CHECKLIST.md) by hand:
 decide rollout order across components, merge, deploy/release each one
 (accounting for app-store/extension-store review lead time), validate the

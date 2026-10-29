@@ -15,6 +15,14 @@ component repo that task belongs to. Your job is to sequence subagents,
 resolve which repo/package each task runs against, enforce the gates and
 loop caps, maintain `progress.md`, and talk to the human.
 
+**Keep your own context small.** Yours is the longest-running context in
+the feature: every turn of the build re-reads all of it, so everything
+that lands in it is paid for again on each later turn. Don't read code,
+diffs or test logs yourself; the reviewer's verdict is your evidence.
+Don't re-read files you already have open. Report progress to the user in
+one line per task (id, verdict, round, commit SHA), not a summary of each
+report.
+
 ## Before you start
 
 - **Read the project's `CLAUDE.md`**, at the root of the project you're
@@ -102,6 +110,15 @@ instead of finding a way around the refusal.
    confirmation before writing any code. This gate has no automated loop —
    it's a conversation; iterate on the plan directly with the user as long
    as it takes.
+4. **Offer a fresh session for Build.** Once the plan is confirmed,
+   everything Build needs is on disk (`plan.md`, `progress.md`, the
+   design). Tell the user Build can start in a fresh session (`/clear` or
+   a new session, then `/implement build`), so the planning conversation,
+   and any `/feature` or `/tech-design` work before it, isn't re-read on
+   every Build turn. Build's own orchestration is mechanical (dispatch,
+   relay, commit), so a Sonnet session can run it. They can also stop a
+   long Build at any point and resume it the same way. If they'd rather
+   continue here, carry on.
 
 ### `progress.md` format
 
@@ -143,8 +160,10 @@ component order from Plan). For each task:
    `<feature-slug>`, is good practice but not enforced by this skill).
 3. Mark the task `in-progress` in `progress.md`.
 4. Dispatch a fresh `task-implementer`, scoped to the resolved component
-   path, with the task id and its `context` entry from `plan.md`. It
-   reads only what `context` cites, not the whole feature folder. Start a
+   path, with the task id, its `context` entry from `plan.md`, and the
+   component's resolved `{{TEST_CMD}}`, `{{LINT_CMD}}` and
+   `{{SCHEMA_CHECK_CMD}}`. It reads only what `context` cites, not the
+   whole feature folder. Start a
    fresh implementer and reviewer for every task; never carry one over
    from the previous task, since its context belongs to that task. For
    each `done-when` condition in turn it writes the failing test, confirms
@@ -157,7 +176,7 @@ component order from Plan). For each task:
    mock for the real dependency once it's available rather than wiring
    straight to a dependency that may not exist yet.
 5. Dispatch a fresh `task-reviewer` (independent context, same component
-   scope, same task id and `context`) against the result. It re-runs
+   scope, same task id, `context` and commands) against the result. It re-runs
    everything itself and returns PASS or FAIL with specifics.
 6. **PASS** → commit (one commit per task, in the task's own component
    repo, message referencing the task id), record the commit SHA and
@@ -186,6 +205,28 @@ component order from Plan). For each task:
    proceeding) rather than treating the whole feature as uniformly stuck
    when only one branch of the dependency graph actually is.
 
+### Fewer turns per task
+
+Each of your turns re-reads your whole context, so in a long Build the
+number of turns you take per task costs more than anything you say in
+them. Keep the bookkeeping to as few turns as you can:
+- Do the branch check, `git add` of the task's files, the commit and the
+  SHA lookup in **one** shell command (`git -C <path> ...` chained), not
+  one turn each.
+- Make independent calls in the same message: update `progress.md` for
+  the finished task (`done`, SHA) and mark the next one `in-progress` in
+  one edit, sent alongside the next task's `task-implementer` dispatch.
+- Don't read `progress.md` back after editing it, or re-read `plan.md`
+  between tasks; you read it once when Build starts.
+
+A Build left alone runs one task after another in the same session, and
+each finished task makes every later turn a little more expensive. When
+Build starts with more than about eight tasks left, tell the user once
+that they can stop at any point and resume in a fresh session
+(`/implement build`) at no cost to the work, since `progress.md` carries
+it. A component boundary is a natural place to do it. Then carry on;
+don't pause Build to ask.
+
 ### Resume
 
 If `/implement build` (or bare `/implement`) is invoked and `progress.md`
@@ -199,7 +240,11 @@ reviewed — re-run step 5 onward for it rather than assuming partial credit.
 
 ## Phase 5 — Review
 
-Runs once every task in `progress.md` is `done`.
+Runs once every task in `progress.md` is `done`. If Build ran in this
+session, offer a fresh one for Review first (`/clear` or a new session,
+then `/implement review`), for the same reason as after the plan gate:
+Review needs `progress.md`, the feature folder and the code, none of
+Build's conversation.
 
 **You are the only writer of `review-report.md`.** Every review agent
 below is read-only: it returns its findings in its final message, and you

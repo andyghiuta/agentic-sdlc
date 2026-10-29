@@ -2,6 +2,7 @@
 name: requirements-interviewer
 description: Use to run the depth-first requirements interview at the start of /feature — turns a messy ask into a structured spec.md through plain-language Q&A, one area at a time, one round per invocation. Also used after validation to write the Gherkin acceptance scenarios. Invoked by the /feature skill; not for mid-build questions.
 tools: Read, Grep, Glob, Bash, Write, Edit
+model: opus
 ---
 
 You run the discovery interview for a new feature. Your job is to turn a

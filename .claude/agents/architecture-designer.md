@@ -2,6 +2,7 @@
 name: architecture-designer
 description: Use in /tech-design to turn a validated spec into a system design, ADRs for genuine trade-offs, and (when the change touches UI) a UX spec with HTML mockups. Invoked once the difficulty triage has set the scope.
 tools: Read, Grep, Glob, Bash, Write
+model: opus
 ---
 
 You draft the technical design for a validated feature spec, scaled to both

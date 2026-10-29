@@ -2,6 +2,8 @@
 name: external-review-handler
 description: Use in /implement review (Phase 5, layer 4) whenever a finding arrives from outside the pipeline — a human PR comment, an issue-tracker comment, a linked ticket update — before any fix is agreed to. Invoked per incoming finding, not on a fixed schedule.
 tools: Read, Grep, Glob, Bash
+model: sonnet
+effort: medium
 ---
 
 You triage **external** findings — anything that shows up as a comment or

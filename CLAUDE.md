@@ -117,14 +117,17 @@ that row's `settings` column above).
 | `{{DEPLOY_CMD}}` | How an approved change reaches users — a server deploy for service/web components, a store submission command/process for mobile/extensions | `helm upgrade ...`, `fly deploy`, `fastlane android deploy`, `fastlane ios release`, `web-ext sign && submit` | |
 | `{{MAIN_BRANCH}}` | The protected branch nothing commits to directly | `main`, `master` | |
 | `{{DOCS_ROOT}}` | Where per-feature artefact folders live. In `monorepo`/`multi-repo`, this only needs a value in `{{HUB_REPO}}`'s own `CLAUDE.md` — other components don't need their own `{{DOCS_ROOT}}` | `docs` | |
+| `{{WORKTREE_SETUP_CMD}}` | Optional. Run in a new worktree right after it's created, from the worktree's root, to bring over what git doesn't: ignored files (`.env`, local config) and installed dependencies. Only used when you opt into a worktree (see "Worktrees") | `cp ../../.env .env && npm ci` | |
 
-Fill in every Value before running `/feature` for the first time on a new
-project (or a new component). For monorepo/multi-repo, each component's own
+Fill in every Value before running `/feature` or `/fix` for the first
+time on a new project (or a new component). Rows marked optional
+(`{{WORKTREE_SETUP_CMD}}`) may stay empty; the skill that uses one says
+what happens when it is. For monorepo/multi-repo, each component's own
 copy of this table lives in a small file made from
 [templates/component-CLAUDE.md](templates/component-CLAUDE.md), not a copy
 of this whole file.
 
-## The six phases, three commands
+## The six phases, three commands (plus `/fix`)
 
 | # | Phase | Command | Gate owner | Key artefacts |
 |---|---|---|---|---|
@@ -145,6 +148,42 @@ Full phase-by-phase detail lives in the skills themselves:
 [.claude/skills/tech-design/SKILL.md](.claude/skills/tech-design/SKILL.md),
 [.claude/skills/implement/SKILL.md](.claude/skills/implement/SKILL.md).
 
+## The light path: `/fix`
+
+A bug, or a small change with no design decisions in it, doesn't earn a
+spec, Gherkin scenarios, a system design or a planner. `/fix` keeps what
+makes a change trustworthy and drops the rest:
+
+1. **Understand.** The orchestrator plays the request back, with at most
+   two questions.
+2. **Investigate.** `fix-investigator` (read-only) reproduces a bug and
+   traces it to a root cause with file:line evidence, or, for a change,
+   finds the code it touches. It checks the limits below and proposes
+   one or two tasks.
+3. **Gate 1 — Senior Dev** confirms the root cause, the task(s) and
+   their `done-when` conditions.
+4. **Build.** The same `task-implementer` and `task-reviewer` loop as
+   `/implement build`: a failing test first (for a bug, the test that
+   reproduces it), an independent review, one commit per task.
+5. **Gate 2 — Senior Dev** signs off after trying the fix themselves.
+
+Its one artefact is `{{DOCS_ROOT}}/fixes/<fix-slug>.md`. See
+[.claude/skills/fix/SKILL.md](.claude/skills/fix/SKILL.md).
+
+**Limits.** A change belongs in `/feature`, not `/fix`, if it:
+- changes the database schema or the data model;
+- needs a new dependency (library, service, infrastructure);
+- changes a contract between components;
+- needs a UI design decision (copy changes and visual bug fixes are
+  fine);
+- doesn't fit in two tasks.
+
+These are checked with evidence during the investigation, and again by
+the implementer and reviewer during Build. Hitting one escalates to
+`/feature`, with `fix.md` as its starting request. The Senior Dev can
+overrule an escalation, and the reason goes in `fix.md`. A small change
+that touches several components is fine as long as no contract changes.
+
 ## Roles
 
 These are human roles, not agents. A gate is not satisfied until the named
@@ -157,7 +196,7 @@ one component or seven.
 - **Senior Dev** — owns the Phase 2 design gate and the Phase 5 review gate;
   also acts as the **Orchestrator** driving `/implement` through Phases 3–4
   (confirms the plan, watches the build, never writes code by hand during
-  this phase, in any component).
+  this phase, in any component). Owns both `/fix` gates too.
 - **Product Owner** — owns the Phase 6 gate: did the shipped change deliver
   the value it promised, once every component that needed to ship actually
   has.
@@ -191,6 +230,12 @@ Every feature gets one folder, living in `{{HUB_REPO}}` for
 Nothing outside this folder is "the spec." If a claim about requirements or
 design isn't written here, it didn't happen — this holds across every
 component's repo, not just the one you happen to be reading code in.
+
+A `/fix` gets one file instead of a folder, in the same place:
+
+```
+{{DOCS_ROOT}}/fixes/<fix-slug>.md   # request, reproduction, root cause, tasks, progress, log
+```
 
 ## Cross-component work (monorepo / multi-repo)
 
@@ -291,8 +336,8 @@ never marked `parallel-ok` and waits its turn.
 
 Every validate-and-fix loop in this methodology has a hard round limit.
 Hitting the limit is a **hard stop** — the running skill halts, marks the
-blocking state explicitly in the relevant artefact (`progress.md` or
-`review-report.md`), and surfaces it to the human. It never silently retries
+blocking state explicitly in the relevant artefact (`progress.md`,
+`review-report.md` or `fix.md`), and surfaces it to the human. It never silently retries
 past the cap or ships with the issue unresolved. This applies per component
 — a cap hit in one component halts that component's progress and is
 reported, but doesn't necessarily need to block work already in flight on
@@ -302,7 +347,8 @@ component's status alongside whatever else is still proceeding.
 | Loop | Cap | Where |
 |---|---|---|
 | validate-and-fix | ≤ 3 rounds | `/feature` (`validate-spec`), `/tech-design` (`validate-design`, including contract validation) |
-| per-task fix loop | ≤ 5 rounds | `/implement build`, one counter per task |
+| investigation | ≤ 2 rounds | `/fix` (`fix-investigator` can't reproduce the bug; the human adds detail once) |
+| per-task fix loop | ≤ 5 rounds | `/implement build` and `/fix`, one counter per task |
 | final review fix loop | ≤ 5 rounds | `/implement review`, one counter per component, plus one shared counter for the cross-component integration check |
 
 ## Branch protection
@@ -319,6 +365,45 @@ both hooks; that's a deliberate human escape hatch, and no skill or agent
 ever uses it. In `multi-repo`, install the hooks separately in every
 component repo — there is no shared `.git` to hook once. In `monorepo`, one
 pair at the repo root covers every package.
+
+## Worktrees (optional)
+
+Build can run in a git worktree, so the main checkout stays free while
+it works. This is **opt-in, per run**, and off by default. Many changes
+don't need one, and a worktree only has what git tracks: ignored files
+like `.env` and installed dependencies aren't there unless
+`{{WORKTREE_SETUP_CMD}}` brings them over. `/implement` asks at the plan
+gate and `/fix` at Gate 1. Neither asks if the session is already
+running in a worktree (`git rev-parse --git-dir` differs from
+`--git-common-dir`).
+
+When the user opts in:
+
+- **Where.** `<repo root>/.worktrees/<slug>`, inside the repo so Claude
+  Code can reach it without extra directory access. Add `.worktrees/` to
+  the repo's local exclude file (`git -C <repo root> rev-parse --git-path
+  info/exclude` prints where it is; a local ignore, nothing to commit) if
+  it isn't ignored already. If the project's test runner or linter
+  scans dot-directories, the user may need to exclude `.worktrees/` in
+  its config too; say so rather than editing that config yourself.
+- **How many.** One per repo: one for `single-repo` and `monorepo` (each
+  package resolves to `<worktree>/<location>`), one per touched component
+  repo for `multi-repo`.
+- **Branch.** `git -C <repo root> worktree add .worktrees/<slug> -b <branch>`,
+  from the main checkout's current commit: `<feature-slug>` for a
+  feature, `fix/<fix-slug>` for a fix. If that branch already exists (git
+  won't check one branch out twice), ask the user what to use.
+- **Setup.** Run that repo's `{{WORKTREE_SETUP_CMD}}` from the
+  worktree's root. If it's empty, tell the user the worktree has no
+  ignored files and no installed dependencies, and ask whether to carry
+  on. Then run `{{TEST_CMD}}` there: a baseline that isn't green is a
+  stop, not something for this feature to fix.
+- **Artefacts stay put.** The feature folder (or `fix.md`) stays in the
+  main checkout. Only code is built in the worktree.
+- **Cleanup.** Only on the user's yes, once the branch is pushed or the
+  PR is open: `git -C <repo root> worktree remove .worktrees/<slug>`. The
+  branch is kept. Never `--force` a removal without asking: it discards
+  anything uncommitted in it.
 
 ## Evidence over claims
 

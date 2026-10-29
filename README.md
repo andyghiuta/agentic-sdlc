@@ -15,7 +15,8 @@ general Claude Code knowledge — it is not the speaker's own code.
 
 ## What this is
 
-Three slash commands drive six phases, each with a named human gate:
+Three slash commands drive six phases, each with a named human gate (a
+fourth, `/fix`, is the light path described below):
 
 | # | Phase | Command | Gate owner |
 |---|---|---|---|
@@ -25,6 +26,15 @@ Three slash commands drive six phases, each with a named human gate:
 | 4 | Build | `/implement build` | Orchestrator |
 | 5 | Review | `/implement review` | Senior Dev |
 | 6 | Ship & learn | manual — [checklist](docs/PHASE-6-CHECKLIST.md) | Product Owner |
+
+A fourth command, `/fix`, is the light path for a bug or a small change
+with no design decisions in it. It proves the root cause before anyone
+writes code, gets a Senior Dev's confirmation, builds under the same TDD
+and independent review, and closes on a second Senior Dev sign-off. It
+skips the spec, Gherkin, design and planning work, and hands off to
+`/feature` as soon as the change outgrows its limits (a schema change, a
+new dependency, a contract change, a UI design decision, or more than
+two tasks).
 
 Every claim an agent makes gets checked against the real codebase before
 it's trusted. Every loop that could run forever (fixing a spec, fixing a
@@ -38,7 +48,8 @@ Full methodology detail lives in [`CLAUDE.md`](CLAUDE.md) (settings,
 repo modes, roles, artefact layout, loop caps, layering rule) and in each
 skill: [`/feature`](.claude/skills/feature/SKILL.md),
 [`/tech-design`](.claude/skills/tech-design/SKILL.md),
-[`/implement`](.claude/skills/implement/SKILL.md).
+[`/implement`](.claude/skills/implement/SKILL.md),
+[`/fix`](.claude/skills/fix/SKILL.md).
 
 This repo makes **no assumptions** about your language, cloud, database,
 issue tracker, or deploy tool — every place one of those matters is a
@@ -91,7 +102,7 @@ Installing has two parts:
 | | Copy into the project | Install as a plugin |
 |---|---|---|
 | Where they live | The project's `.claude/skills/` and `.claude/agents/` | The `agentic-sdlc` plugin, installed for you or for the project |
-| Commands | `/feature`, `/tech-design`, `/implement` | `/agentic-sdlc:feature`, `/agentic-sdlc:tech-design`, `/agentic-sdlc:implement` |
+| Commands | `/feature`, `/tech-design`, `/implement`, `/fix` | `/agentic-sdlc:feature`, `/agentic-sdlc:tech-design`, `/agentic-sdlc:implement`, `/agentic-sdlc:fix` |
 | Team gets the same version | Yes, it's in the repo | Yes with project scope, which pins it in `.claude/settings.json` |
 | Phase 6 retro edits to skills | A PR to the project | A PR to the plugin repo (or your fork), which reaches every project |
 | Updates | Copy the new files in by hand | `claude plugin update agentic-sdlc@agentic-sdlc` |
@@ -308,22 +319,36 @@ deliberately; no skill or agent in this repo ever uses it.
                    #   cross-component integration check. Resumable:
                    #   re-run /implement after an interruption and it
                    #   picks up where progress.md left off, per component.
+
+/fix               # The light path — a bug or small change: reproduce and
+                   #   prove the root cause, Senior Dev confirms, TDD build
+                   #   with per-task review, Senior Dev signs off
+                   #   docs/fixes/<fix>.md
 ```
 
 With the plugin, the same commands are `/agentic-sdlc:feature`,
-`/agentic-sdlc:tech-design` and `/agentic-sdlc:implement`.
+`/agentic-sdlc:tech-design`, `/agentic-sdlc:implement` and
+`/agentic-sdlc:fix`.
 
-`/implement` only runs when you type it. Claude won't start it on its own,
-because it writes code and makes commits. `/feature` and `/tech-design`
-can also be picked up from a plain request like "let's spec out bulk
-export".
+`/implement` and `/fix` only run when you type them. Claude won't start
+them on its own, because they write code and make commits. `/feature` and
+`/tech-design` can also be picked up from a plain request like "let's
+spec out bulk export"; `/feature` suggests `/fix` when the request looks
+like a bug or a small change.
+
+Build runs in your current checkout by default. To keep that checkout
+free, you can opt into a git worktree when `/implement` shows you the
+plan, or at `/fix`'s first gate. Set `{{WORKTREE_SETUP_CMD}}` in
+`CLAUDE.md` to copy ignored files like `.env` into it and install
+dependencies; see `CLAUDE.md`'s Worktrees section.
 
 Each agent sets its own model in its frontmatter, so cost doesn't depend
 on the model your session runs. The agents that run per task or check
 facts against code (`task-implementer`, `task-reviewer`, the validators,
 `contract-reviewer`, `external-review-handler`) use Sonnet. The ones whose
 mistakes carry into everything after them (the interviewer, the designer,
-the planner, `feature-reviewer`, `architecture-reviewer`) use Opus. A task
+the planner, `fix-investigator`, `feature-reviewer`,
+`architecture-reviewer`) use Opus. A task
 still failing review at fix round 3 gets an Opus implementer. Change
 `model:` and `effort:` in `.claude/agents/*.md` to retune.
 
@@ -369,7 +394,8 @@ CLAUDE.md                          # settings, repo mode, Components table, role
     feature/SKILL.md               # /feature
     tech-design/SKILL.md           # /tech-design
     implement/SKILL.md             # /implement
-  agents/                          # 11 subagents backing the three skills
+    fix/SKILL.md                   # /fix
+  agents/                          # 12 subagents backing the four skills
 hooks/
   pre-commit-branch-protection.sh  # blocks commits made on a protected branch
   pre-push-branch-protection.sh    # blocks pushes to a protected branch

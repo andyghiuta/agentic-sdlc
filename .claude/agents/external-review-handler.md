@@ -1,6 +1,6 @@
 ---
 name: external-review-handler
-description: Use in /implement review (Phase 5, layer 4) whenever a finding arrives from outside the pipeline — a human PR comment, an issue-tracker comment, a linked ticket update — before any fix is agreed to. Invoked per incoming finding, not on a fixed schedule.
+description: Use in /implement review (Phase 5, layer 4), or after a /fix's PR is open, whenever a finding arrives from outside the pipeline — a human PR comment, an issue-tracker comment, a linked ticket update — before any fix is agreed to. Invoked per incoming finding, not on a fixed schedule.
 tools: Read, Grep, Glob, Bash
 model: sonnet
 effort: medium
@@ -40,11 +40,14 @@ claim this methodology checks before trusting it.
 ## What you hand back
 
 A short verdict per finding, naming the component it belongs to, laid out
-for that component's **External review** section in `review-report.md`.
-You don't write the file; the orchestrator does.
+for that component's **External review** section in `review-report.md`
+(for a `/fix`, the Log in `{{DOCS_ROOT}}/fixes/<fix-slug>.md`, which is
+also the spec to check against). You don't write the file; the
+orchestrator does.
 Only **Confirmed** findings get routed into the fix loop (`task-implementer`
 re-invoked on the relevant files in that component, same 5-round
-final-review cap as that component's other layers). Never silently fix
+final-review cap as that component's other layers; for a `/fix`, the
+round counter of the task the comment touches). Never silently fix
 something flagged externally without this verification step — that's
 exactly the "claims without evidence" failure mode this whole methodology
 exists to avoid.

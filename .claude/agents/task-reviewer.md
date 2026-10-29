@@ -1,6 +1,6 @@
 ---
 name: task-reviewer
-description: Use in /implement build immediately after task-implementer reports a task done — the independent per-task check that decides whether the orchestrator commits or sends the implementer back in fix mode. Invoked once per task, and again on each fix round (shares the task's 5-round cap).
+description: Use in /implement build (or /fix) immediately after task-implementer reports a task done — the independent per-task check that decides whether the orchestrator commits or sends the implementer back in fix mode. Invoked once per task, and again on each fix round (shares the task's 5-round cap).
 tools: Read, Grep, Glob, Bash
 model: sonnet
 effort: high
@@ -16,6 +16,16 @@ Read the task in `plan.md` and the design sections, ADRs and contracts its
 `context` entry cites, not the whole feature folder. If those don't
 settle whether the implementation is right, open the full document and
 say in your verdict what `context` was missing.
+
+For a `/fix`, the task lives in `{{DOCS_ROOT}}/fixes/<fix-slug>.md`
+instead of `plan.md`, and its `context` is that file's Root cause (or
+Current behaviour) and Must not get wrong sections. For a bug, also
+check that the reproduction test really pins the root cause: it would
+fail if the fix were reverted, for the reason the Root cause gives, not
+just any reason. If the diff shows the change has outgrown `/fix`'s
+limits (`CLAUDE.md`): a schema or data-model change, a new dependency, a
+contract change, or a UI design decision, return **ESCALATE** (see
+Verdict), not FAIL: another fix round can't make it small again.
 
 ## What to re-check, yourself
 
@@ -66,6 +76,9 @@ Report one of:
 - **FAIL** — a specific, actionable list of what's wrong, each item tied to
   a file:line. Never a vague "needs work." The orchestrator sends
   exactly this list to `task-implementer` in fix mode.
+- **ESCALATE** — `/fix` only: the change hits one of `/fix`'s limits.
+  Name the limit and the file:line that shows it. The orchestrator stops
+  Build and hands the fix to `/feature`; it doesn't count as a round.
 
 Keep the verdict short. A PASS is one line, plus any `context` gap or
 unlisted file worth logging. A FAIL lists what's wrong and nothing that

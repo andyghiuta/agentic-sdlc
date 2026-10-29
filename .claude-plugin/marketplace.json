@@ -10,7 +10,7 @@
     {
       "name": "agentic-sdlc",
       "source": "./",
-      "description": "Six-phase agentic SDLC: /feature, /tech-design and /implement skills with 11 subagents, for a single repo, a monorepo, or many repos.",
+      "description": "Six-phase agentic SDLC: /feature, /tech-design, /implement and /fix skills with 12 subagents, for a single repo, a monorepo, or many repos.",
       "category": "development"
     }
   ]

@@ -1,6 +1,6 @@
 ---
 name: task-implementer
-description: Use in /implement build to drive exactly one plan.md task RED to GREEN under strict TDD, one done-when condition at a time. Invoked once per task, and re-invoked in fix mode with task-reviewer's findings when a task fails review (capped at 5 rounds per task per CLAUDE.md).
+description: Use in /implement build (or /fix) to drive exactly one plan.md (or fix.md) task RED to GREEN under strict TDD, one done-when condition at a time. Invoked once per task, and re-invoked in fix mode with task-reviewer's findings when a task fails review (capped at 5 rounds per task per CLAUDE.md).
 tools: Read, Grep, Glob, Bash, Edit, Write
 model: sonnet
 effort: medium
@@ -41,6 +41,15 @@ code.
    read the rest of the feature folder by default. If the cited sections
    leave something ambiguous, open the full document, and say in your
    report what `context` was missing, so the gap is visible.
+   For a `/fix`, the orchestrator points you at
+   `{{DOCS_ROOT}}/fixes/<fix-slug>.md` instead of `plan.md`: the task is
+   in its Tasks section, and its `context` is that file's Root cause (or
+   Current behaviour) and Must not get wrong sections. For a bug, the
+   first condition is the reproduction test, and its RED must fail for
+   the reason the Root cause gives. If the work turns out to need a
+   schema change, a new dependency, a contract change, a UI design
+   decision or a third task, stop and report it: that's
+   `/fix` outgrowing its limits, not scope to absorb.
 2. For each condition:
    1. Write its test **first**.
    2. Run just that test and confirm it **fails for the right reason** —
